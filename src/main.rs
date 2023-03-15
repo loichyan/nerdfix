@@ -128,6 +128,13 @@ impl Runtime {
         mut patched: Option<&mut String>,
         path: &Path,
     ) -> error::Result<()> {
+        macro_rules! report {
+            ($diag:expr) => {
+                term::emit(&mut context.writer, &context.config, &context.files, $diag)
+                    .context(error::Reporter)?;
+            };
+        }
+
         let content = std::fs::read_to_string(path).context(error::Io(path))?;
         let file_id = context.files.add(path.display().to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
@@ -143,21 +150,27 @@ impl Runtime {
                     let diag = Diagnostic::warning()
                         .with_message(format!("Found obsolete icon U+{:X}", icon.codepoint))
                         .with_labels(vec![Label::primary(file_id, start..end)
-                            .with_message(format!("Icon '{}' is marked as obsolete", icon.name))])
-                        .with_notes(self.diagnostic_notes(&candidates)?);
-                    term::emit(&mut context.writer, &context.config, &context.files, &diag)
-                        .context(error::Reporter)?;
-                    if let Some(patched) = &mut patched {
-                        match self.prompt_patched_icon(&candidates) {
-                            Ok(Some(c)) => {
-                                ch = c;
+                            .with_message(format!("Icon '{}' is marked as obsolete", icon.name))]);
+                    if let Some(&last) = context.history.get(&icon.codepoint) {
+                        report!(&diag);
+                        cprintln!("# Auto patch using last input '{}'".green, last);
+                        ch = last;
+                    } else {
+                        let diag = diag.with_notes(self.diagnostic_notes(&candidates)?);
+                        report!(&diag);
+                        if let Some(patched) = &mut patched {
+                            match self.prompt_patched_icon(&candidates) {
+                                Ok(Some(c)) => {
+                                    ch = c;
+                                    context.history.insert(icon.codepoint, ch);
+                                }
+                                Ok(None) => (),
+                                Err(error::Error::Interrupted) => {
+                                    patched.push_str(&content[start..]);
+                                    return Ok(());
+                                }
+                                Err(e) => return Err(e),
                             }
-                            Ok(None) => (),
-                            Err(error::Error::Interrupted) => {
-                                patched.push_str(&content[start..]);
-                                return Ok(());
-                            }
-                            Err(e) => return Err(e),
                         }
                     }
                 }
@@ -388,11 +401,11 @@ impl FromStr for UserInput {
     }
 }
 
-// TODO: remember user input
 pub struct CheckerContext {
     files: SimpleFiles<String, String>,
     writer: StandardStream,
     config: term::Config,
+    history: HashMap<u32, char>,
 }
 
 impl CheckerContext {
@@ -401,6 +414,7 @@ impl CheckerContext {
             files: SimpleFiles::new(),
             writer: StandardStream::stderr(term::termcolor::ColorChoice::Always),
             config: term::Config::default(),
+            history: HashMap::new(),
         }
     }
 }
