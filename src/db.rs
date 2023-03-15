@@ -5,7 +5,7 @@ use std::{borrow::Borrow, fmt, str::FromStr};
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Icon {
     pub name: String,
-    pub codepoint: u32,
+    pub codepoint: char,
     pub obsolete: bool,
 }
 
@@ -20,6 +20,7 @@ impl FromStr for CachedIcon {
         let codepoint = splited.next().ok_or("Miss field 'codepoint'")?;
         let codepoint =
             u32::from_str_radix(codepoint, 16).map_err(|_| "Invalid field 'codepoint'")?;
+        let codepoint = char::from_u32(codepoint).ok_or_else(|| "Invalid field 'codepoint'")?;
         let obsolete = match splited.next() {
             Some(s) if s == "obsolete" => true,
             Some(_) => return Err("Invalid field 'obsolete'"),
@@ -36,7 +37,7 @@ impl FromStr for CachedIcon {
 impl<T: Borrow<Icon>> fmt::Display for CachedIcon<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let icon: &Icon = self.0.borrow();
-        write!(f, "{} {:x}", icon.name, icon.codepoint)?;
+        write!(f, "{} {:x}", icon.name, icon.codepoint as u32)?;
         if icon.obsolete {
             write!(f, " obsolete")?;
         }

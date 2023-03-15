@@ -41,6 +41,7 @@ impl<'a> Parser<'a> {
                     .next()?
                     .as_text()?;
                 let codepoint = u32::from_str_radix(codepoint, 16).ok()?;
+                let codepoint = char::from_u32(codepoint)?;
                 let obsolete = (|| {
                     node.find(Class("corner-text").child(Text))
                         .next()?

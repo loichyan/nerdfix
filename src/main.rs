@@ -79,7 +79,7 @@ pub enum Command {
 pub struct Runtime {
     icons: Vec<Icon>,
     good_icons: OnceCell<Rc<Vec<Icon>>>,
-    index: OnceCell<HashMap<u32, usize>>,
+    index: OnceCell<HashMap<char, usize>>,
     name_index: OnceCell<HashMap<String, usize>>,
     corpus: OnceCell<Corpus>,
     search_index: OnceCell<Rc<SearchIndex>>,
@@ -139,7 +139,7 @@ impl Runtime {
         let file_id = context.files.add(path.display().to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
         for (start, mut ch) in content.char_indices() {
-            if let Some(&icon) = self.index().get(&(ch as u32)) {
+            if let Some(&icon) = self.index().get(&ch) {
                 let icon = &self.icons[icon];
                 if icon.obsolete {
                     let mut end = start + 1;
@@ -148,7 +148,7 @@ impl Runtime {
                     }
                     let candidates = self.candidates(icon)?;
                     let diag = Diagnostic::warning()
-                        .with_message(format!("Found obsolete icon U+{:X}", icon.codepoint))
+                        .with_message(format!("Found obsolete icon U+{:X}", icon.codepoint as u32))
                         .with_labels(vec![Label::primary(file_id, start..end)
                             .with_message(format!("Icon '{}' is marked as obsolete", icon.name))]);
                     if let Some(&last) = context.history.get(&icon.codepoint) {
@@ -208,8 +208,8 @@ impl Runtime {
                 s.push_str(&format!(
                     "    {}. {} U+{:X} {}\n",
                     i + 1,
-                    char::from_u32(candi.codepoint).unwrap(),
-                    &candi.codepoint,
+                    candi.codepoint,
+                    candi.codepoint as u32,
                     &candi.name
                 ));
             }
@@ -246,7 +246,7 @@ impl Runtime {
                         continue;
                     }
                 }
-                UserInput::Char(ch) => match self.index().get(&(ch as u32)) {
+                UserInput::Char(ch) => match self.index().get(&ch) {
                     Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
                     _ => {
                         cprintln!("# '{}' is not a valid icon!", ch);
@@ -260,17 +260,18 @@ impl Runtime {
                         continue;
                     }
                 },
-                UserInput::Codepoint(hex) => match self.index().get(&hex) {
-                    Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
-                    _ => {
-                        cprintln!("# 'U+{:X}' is not a valid icon codepoint!", hex);
-                        continue;
+                UserInput::Codepoint(hex) => {
+                    match char::from_u32(hex).and_then(|ch| self.index().get(&ch)) {
+                        Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
+                        _ => {
+                            cprintln!("# 'U+{:X}' is not a valid icon codepoint!", hex);
+                            continue;
+                        }
                     }
-                },
+                }
             };
-            let ch = char::from_u32(icon.codepoint).unwrap();
-            cprintln!("# Your input: {}".green, ch);
-            break Some(ch);
+            cprintln!("# Your input: {}".green, icon.codepoint);
+            break Some(icon.codepoint);
         })
     }
 
@@ -287,7 +288,7 @@ impl Runtime {
             .get_or_init(|| Rc::new(self.icons.iter().filter(|i| !i.obsolete).cloned().collect()))
     }
 
-    fn index(&self) -> &HashMap<u32, usize> {
+    fn index(&self) -> &HashMap<char, usize> {
         self.index.get_or_init(|| {
             self.icons
                 .iter()
@@ -405,7 +406,7 @@ pub struct CheckerContext {
     files: SimpleFiles<String, String>,
     writer: StandardStream,
     config: term::Config,
-    history: HashMap<u32, char>,
+    history: HashMap<char, char>,
 }
 
 impl CheckerContext {
