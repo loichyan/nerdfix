@@ -1,0 +1,5 @@
+# Rust
+/target
+
+# Env files
+.direnv
