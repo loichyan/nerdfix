@@ -348,7 +348,10 @@ impl Autocomplete for Autocompleter {
                 .corpus
                 .search(input)
                 .into_iter()
-                .map(|&i| self.icons[i].name.clone())
+                .map(|&i| {
+                    let icon = &self.icons[i];
+                    format!("{} {}", icon.codepoint, icon.name)
+                })
                 .collect())
         }
     }
