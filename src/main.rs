@@ -1,10 +1,14 @@
 #[macro_use]
 mod util;
+mod autocomplete;
+mod cli;
 mod error;
 mod icon;
 mod parser;
 
-use clap::{Parser, Subcommand};
+use autocomplete::{Autocompleter, SearchIndex};
+use clap::Parser;
+use cli::{Command, UserInput};
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
     files::SimpleFiles,
@@ -13,23 +17,15 @@ use codespan_reporting::{
 use colored::Colorize;
 use icon::{CachedIcon, Icon};
 use indicium::simple::SearchIndexBuilder;
-use inquire::{Autocomplete, InquireError};
+use inquire::InquireError;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-    rc::Rc,
-    str::FromStr,
-};
+use std::{collections::HashMap, path::Path, rc::Rc};
 use thisctx::{IntoError, WithContext};
 
 static CACHED: &str = include_str!("./cached.txt");
 const SIMILARITY: f32 = 0.75;
 const MAX_CHOICES: usize = 7;
-const V_PATH: &str = "PATH";
-
-type SearchIndex = indicium::simple::SearchIndex<usize>;
 
 macro_rules! cprintln {
     ($fmt:literal $(,$args:expr)* $(,)?) => {
@@ -38,41 +34,6 @@ macro_rules! cprintln {
     ($fmt:literal.$color:ident $(,$args:expr)* $(,)?) => {
         println!("{}", format!($fmt $(,$args)*).$color());
     };
-}
-
-#[derive(Debug, Parser)]
-pub struct Cli {
-    /// Path(s) to load the cached content.
-    #[arg(short('c'), long, value_name(V_PATH))]
-    pub cache: Vec<PathBuf>,
-    /// Path(s) to load the icons cheat sheet.
-    #[arg(short('C'), long, value_name(V_PATH))]
-    pub cheat_sheet: Vec<PathBuf>,
-    #[command(subcommand)]
-    pub cmd: Command,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum Command {
-    /// Cache parsed icons.
-    Cache {
-        /// Path to save the cached content.
-        #[arg(short, long, value_name(V_PATH))]
-        output: PathBuf,
-    },
-    /// Check for obsolete icons.
-    Check {
-        /// Path(s) of files to check.
-        #[arg(value_name(V_PATH))]
-        source: Vec<PathBuf>,
-    },
-    /// Fix obsolete icons interactively.
-    Fix {
-        /// Path(s) of files to check.
-        #[arg(value_name(V_PATH))]
-        source: Vec<PathBuf>,
-    },
-    // TODO: fuzzy search
 }
 
 #[derive(Default)]
@@ -329,82 +290,6 @@ impl Runtime {
     }
 }
 
-#[derive(Clone)]
-pub struct Autocompleter {
-    icons: Rc<Vec<Icon>>,
-    corpus: Rc<SearchIndex>,
-    candidates: usize,
-}
-
-impl Autocomplete for Autocompleter {
-    fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, inquire::CustomUserError> {
-        if input.is_empty() {
-            Ok((0..self.candidates)
-                .into_iter()
-                .map(|i| (i + 1).to_string())
-                .collect())
-        } else {
-            Ok(self
-                .corpus
-                .search(input)
-                .into_iter()
-                .map(|&i| {
-                    let icon = &self.icons[i];
-                    format!("{} {}", icon.codepoint, icon.name)
-                })
-                .collect())
-        }
-    }
-
-    fn get_completion(
-        &mut self,
-        input: &str,
-        highlighted_suggestion: Option<String>,
-    ) -> Result<inquire::autocompletion::Replacement, inquire::CustomUserError> {
-        if let Some(s) = highlighted_suggestion {
-            Ok(Some(s))
-        } else if input.is_empty() {
-            Ok(Some(String::from("1")))
-        } else {
-            Ok(self
-                .corpus
-                .search_with(&indicium::simple::SearchType::Live, &1, input)
-                .into_iter()
-                .next()
-                .map(|&i| self.icons[i].name.clone()))
-        }
-    }
-}
-
-pub enum UserInput {
-    Candidate(usize),
-    Name(String),
-    Codepoint(u32),
-    Char(char),
-}
-
-impl FromStr for UserInput {
-    type Err = error::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.is_empty() {
-            return Err(error::InvalidInput.build());
-        } else if let Some(codepoint) = s.strip_prefix("u+").or_else(|| s.strip_prefix("U+")) {
-            u32::from_str_radix(codepoint, 16)
-                .map_err(|_| error::InvalidInput.build())
-                .map(Self::Codepoint)
-        } else if matches!(s.as_bytes().first(), Some(b'0'..=b'9')) {
-            usize::from_str(&s)
-                .map_err(|_| error::InvalidInput.build())
-                .map(Self::Candidate)
-        } else if s.chars().count() == 1 {
-            Ok(Self::Char(s.chars().next().unwrap()))
-        } else {
-            Ok(Self::Name(s.to_owned()))
-        }
-    }
-}
-
 pub struct CheckerContext {
     files: SimpleFiles<String, String>,
     writer: StandardStream,
@@ -424,7 +309,7 @@ impl CheckerContext {
 }
 
 fn main() -> anyhow::Result<()> {
-    let args = Cli::parse();
+    let args = cli::Cli::parse();
     let mut rt = Runtime::default();
     rt.load_inline_cache(CACHED);
     for path in args.cache.iter() {
