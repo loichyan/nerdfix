@@ -74,7 +74,7 @@ impl Runtime {
     }
 
     pub fn save_cache(&self, path: &Path) -> error::Result<()> {
-        let mut content = String::new();
+        let mut content = String::default();
         for icon in self.icons.iter() {
             let icon = CachedIcon(icon);
             content.push_str(&format!("{icon}\n"));
@@ -161,7 +161,7 @@ impl Runtime {
     }
 
     fn diagnostic_notes(&self, candidates: &[&Icon]) -> error::Result<Vec<String>> {
-        let mut notes = Vec::new();
+        let mut notes = Vec::default();
 
         if !candidates.is_empty() {
             let mut s = String::from("You could replace it with:\n");
@@ -297,13 +297,13 @@ pub struct CheckerContext {
     history: HashMap<char, char>,
 }
 
-impl CheckerContext {
-    pub fn new() -> Self {
+impl Default for CheckerContext {
+    fn default() -> Self {
         Self {
             files: SimpleFiles::new(),
             writer: StandardStream::stderr(term::termcolor::ColorChoice::Always),
             config: term::Config::default(),
-            history: HashMap::new(),
+            history: HashMap::default(),
         }
     }
 }
@@ -313,24 +313,24 @@ fn main() -> anyhow::Result<()> {
     let mut rt = Runtime::default();
     rt.load_inline_cache(CACHED);
     for path in args.cache.iter() {
-        rt.load_cache(&path)?;
+        rt.load_cache(path)?;
     }
     for path in args.cheat_sheet.iter() {
-        rt.load_cheat_sheet(&path)?;
+        rt.load_cheat_sheet(path)?;
     }
     match args.cmd {
         Command::Cache { output } => rt.save_cache(&output)?,
         Command::Check { source } => {
-            let mut context = CheckerContext::new();
+            let mut context = CheckerContext::default();
             for path in source.iter() {
-                rt.check(&mut context, None, &path)?;
+                rt.check(&mut context, None, path)?;
             }
         }
         Command::Fix { source } => {
-            let mut context = CheckerContext::new();
+            let mut context = CheckerContext::default();
             for path in source.iter() {
-                let mut patched = String::new();
-                rt.check(&mut context, Some(&mut patched), &path)?;
+                let mut patched = String::default();
+                rt.check(&mut context, Some(&mut patched), path)?;
                 if inquire::Confirm::new("Are your sure to write the patched content?")
                     .prompt()
                     .unwrap_or(false)

@@ -16,10 +16,7 @@ pub struct Autocompleter {
 impl Autocomplete for Autocompleter {
     fn get_suggestions(&mut self, input: &str) -> Result<Vec<String>, inquire::CustomUserError> {
         if input.is_empty() {
-            Ok((0..self.candidates)
-                .into_iter()
-                .map(|i| (i + 1).to_string())
-                .collect())
+            Ok((0..self.candidates).map(|i| (i + 1).to_string()).collect())
         } else {
             Ok(self
                 .corpus

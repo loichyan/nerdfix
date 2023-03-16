@@ -54,13 +54,13 @@ impl FromStr for UserInput {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.is_empty() {
-            return Err(error::InvalidInput.build());
+            Err(error::InvalidInput.build())
         } else if let Some(codepoint) = s.strip_prefix("u+").or_else(|| s.strip_prefix("U+")) {
             u32::from_str_radix(codepoint, 16)
                 .map_err(|_| error::InvalidInput.build())
                 .map(Self::Codepoint)
         } else if matches!(s.as_bytes().first(), Some(b'0'..=b'9')) {
-            usize::from_str(&s)
+            usize::from_str(s)
                 .map_err(|_| error::InvalidInput.build())
                 .map(Self::Candidate)
         } else if s.chars().count() == 1 {

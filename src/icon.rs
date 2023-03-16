@@ -20,7 +20,7 @@ impl FromStr for CachedIcon {
         let codepoint = splited.next().ok_or("Miss field 'codepoint'")?;
         let codepoint =
             u32::from_str_radix(codepoint, 16).map_err(|_| "Invalid field 'codepoint'")?;
-        let codepoint = char::from_u32(codepoint).ok_or_else(|| "Invalid field 'codepoint'")?;
+        let codepoint = char::from_u32(codepoint).ok_or("Invalid field 'codepoint'")?;
         let obsolete = match splited.next() {
             Some(s) if s == "obsolete" => true,
             Some(_) => return Err("Invalid field 'obsolete'"),
