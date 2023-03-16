@@ -89,7 +89,7 @@ impl Runtime {
         context: &mut CheckerContext,
         mut patched: Option<&mut String>,
         path: &Path,
-    ) -> error::Result<()> {
+    ) -> error::Result<bool> {
         macro_rules! report {
             ($diag:expr) => {
                 term::emit(&mut context.writer, &context.config, &context.files, $diag)
@@ -97,6 +97,7 @@ impl Runtime {
             };
         }
 
+        let mut has_obsolete = false;
         let content = std::fs::read_to_string(path).context(error::Io(path))?;
         let file_id = context.files.add(path.display().to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
@@ -104,6 +105,7 @@ impl Runtime {
             if let Some(&icon) = self.index().get(&ch) {
                 let icon = &self.icons[icon];
                 if icon.obsolete {
+                    has_obsolete = true;
                     let mut end = start + 1;
                     while !content.is_char_boundary(end) {
                         end += 1;
@@ -129,7 +131,7 @@ impl Runtime {
                                 Ok(None) => (),
                                 Err(error::Error::Interrupted) => {
                                     patched.push_str(&content[start..]);
-                                    return Ok(());
+                                    return Ok(has_obsolete);
                                 }
                                 Err(e) => return Err(e),
                             }
@@ -141,7 +143,7 @@ impl Runtime {
                 patched.push(ch);
             }
         }
-        Ok(())
+        Ok(has_obsolete)
     }
 
     fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {
@@ -184,7 +186,9 @@ impl Runtime {
         let candidates = candidates.unwrap_or(&[]);
         Ok(loop {
             let prompt = inquire::Text::new("Input an icon:")
-                .with_help_message("Press <Tab> to autocomplete, <Esc> to cancel, <Ctrl-C> to quit")
+                .with_help_message(
+                    "Press <Tab> to autocomplete, <Esc> to cancel, <Ctrl-C> to finish",
+                )
                 .with_autocomplete(self.autocompleter(candidates.len()));
             let input = match prompt.prompt() {
                 Ok(t) => t,
@@ -333,12 +337,15 @@ fn main() -> anyhow::Result<()> {
             let mut context = CheckerContext::default();
             for path in source.iter() {
                 let mut patched = String::default();
-                rt.check(&mut context, Some(&mut patched), path)?;
-                if inquire::Confirm::new("Are your sure to write the patched content?")
-                    .prompt()
-                    .unwrap_or(false)
-                {
-                    std::fs::write(path, patched).context(error::Io(path))?;
+                if rt.check(&mut context, Some(&mut patched), path)? {
+                    match inquire::Confirm::new("Are your sure to write the patched content?")
+                        .with_help_message("Press <Ctrl-C> to quit")
+                        .prompt()
+                    {
+                        Ok(true) => std::fs::write(path, patched).context(error::Io(path))?,
+                        Err(InquireError::OperationInterrupted) => break,
+                        _ => (),
+                    }
                 }
             }
         }
