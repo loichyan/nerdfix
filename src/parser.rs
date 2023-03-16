@@ -1,6 +1,6 @@
 //! Parses font infomation from nerd font official cheat sheet.
 
-use crate::{db::Icon, error};
+use crate::{error, icon::Icon};
 use select::document::Document;
 
 pub fn parse(s: &str) -> error::Result<Vec<Icon>> {

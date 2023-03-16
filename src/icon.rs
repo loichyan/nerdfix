@@ -1,4 +1,4 @@
-//! Database of nerd font icons infomation.
+//! Nerd font icons infomation.
 
 use std::{borrow::Borrow, fmt, str::FromStr};
 

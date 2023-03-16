@@ -4,7 +4,7 @@ macro_rules! icon {
         icon!($name, $codepoint, false)
     };
     ($name:literal, $codepoint:literal, $obsolete:literal) => {
-        crate::db::Icon {
+        crate::icon::Icon {
             name: $name.to_owned(),
             codepoint: char::from_u32($codepoint).unwrap(),
             obsolete: $obsolete,

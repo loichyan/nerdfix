@@ -1,7 +1,7 @@
 #[macro_use]
 mod util;
-mod db;
 mod error;
+mod icon;
 mod parser;
 
 use clap::{Parser, Subcommand};
@@ -11,7 +11,7 @@ use codespan_reporting::{
     term::{self, termcolor::StandardStream},
 };
 use colored::Colorize;
-use db::{CachedIcon, Icon};
+use icon::{CachedIcon, Icon};
 use indicium::simple::SearchIndexBuilder;
 use inquire::{Autocomplete, InquireError};
 use ngrammatic::{Corpus, CorpusBuilder};
