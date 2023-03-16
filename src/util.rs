@@ -11,3 +11,13 @@ macro_rules! icon {
         }
     };
 }
+
+/// Prints colored output, `red` color is used by default.
+macro_rules! cprintln {
+    ($fmt:literal $(,$args:expr)* $(,)?) => {
+        cprintln!($fmt.red $(,$args)*);
+    };
+    ($fmt:literal.$color:ident $(,$args:expr)* $(,)?) => {
+        println!("{}", format!($fmt $(,$args)*).$color());
+    };
+}

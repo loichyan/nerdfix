@@ -1,6 +1,6 @@
 //! Autocompletion and fuzzy search for nerd fonts.
 
-use crate::{icon::Icon, FstSet};
+use crate::{icon::Icon, runtime::FstSet};
 use fst::{Automaton, IntoStreamer, Streamer};
 use inquire::Autocomplete;
 use itertools::Itertools;
