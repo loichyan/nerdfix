@@ -1,0 +1,17 @@
+nf-mdi-folder_multiple = ""
+nf-md-folder_multiple  = "󰉓"
+
+nf-mdi-file_document_box = ""
+nf-md-file_document      = "󰈙"
+
+nf-mdi-git = "",
+nf-md-git  = "󰊢"
+
+nf-mdi-tab = "裡"
+nf-md-tab  = "󰓩"
+
+nf-mdi-rhombus_outline = "ﰊ"
+nf-md-rhombus_outline  = "󰜌"
+
+nf-mdi-arrow_right_thick = ""
+nf-md-arrow_right_thick  = "󰁕"
