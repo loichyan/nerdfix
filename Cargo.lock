@@ -175,18 +175,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "extend"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c5216e387a76eebaaf11f6d871ec8a4aae0b25f05456ee21f228e024b1b3610"
-dependencies = [
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "fst"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -387,7 +375,6 @@ dependencies = [
  "clap",
  "codespan-reporting",
  "colored",
- "extend",
  "fst",
  "inquire",
  "itertools",
