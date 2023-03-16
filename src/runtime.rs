@@ -23,8 +23,7 @@ pub type FstSet = fst::Set<Vec<u8>>;
 
 #[derive(Default)]
 pub struct Runtime {
-    icons: Vec<Icon>,
-    good_icons: OnceCell<Rc<Vec<Icon>>>,
+    icons: Rc<Vec<Icon>>,
     index: OnceCell<HashMap<char, usize>>,
     name_index: OnceCell<Rc<HashMap<String, usize>>>,
     corpus: OnceCell<Rc<Corpus>>,
@@ -32,30 +31,8 @@ pub struct Runtime {
 }
 
 impl Runtime {
-    pub fn load_cache(&mut self, path: &Path) -> error::Result<()> {
-        let content = std::fs::read_to_string(path).context(error::Io(path))?;
-        for (i, line) in content.lines().enumerate() {
-            let icon = line
-                .parse::<CachedIcon>()
-                .map_err(|e| error::CorruptedCache(e, path, i).build())?;
-            self.icons.push(icon.0);
-        }
-        Ok(())
-    }
-
-    pub fn load_cheat_sheet(&mut self, path: &Path) -> error::Result<()> {
-        let content = std::fs::read_to_string(path).context(error::Io(path))?;
-        // Skips yaml metadata.
-        let Some(start) = content.find('<') else { return Ok(()) };
-        self.icons.extend(crate::parser::parse(&content[start..])?);
-        Ok(())
-    }
-
-    pub fn load_inline_cache(&mut self, cached: &str) {
-        for line in cached.lines() {
-            let icon = line.parse::<CachedIcon>().unwrap();
-            self.icons.push(icon.0);
-        }
+    pub fn builder() -> RuntimeBuilder {
+        RuntimeBuilder::default()
     }
 
     pub fn save_cache(&self, path: &Path) -> error::Result<()> {
@@ -141,7 +118,7 @@ impl Runtime {
                     None
                 } else {
                     let &candi = self.name_index().get(&candi.text).unwrap();
-                    Some(&self.good_icons()[candi])
+                    Some(&self.icons[candi])
                 }
             })
             .collect::<Vec<_>>())
@@ -191,7 +168,7 @@ impl Runtime {
             let icon = match input {
                 UserInput::Name(name) => {
                     if let Some(&icon) = self.name_index().get(&name) {
-                        &self.good_icons()[icon]
+                        &self.icons[icon]
                     } else {
                         cprintln!("# '{}' is not a valid icon name!", name);
                         continue;
@@ -228,7 +205,7 @@ impl Runtime {
 
     fn autocompleter(&self, candidates: usize) -> Autocompleter {
         Autocompleter {
-            icons: self.good_icons().clone(),
+            icons: self.icons.clone(),
             corpus: self.corpus().clone(),
             name_index: self.name_index().clone(),
             fst: self.fst_set().clone(),
@@ -239,13 +216,15 @@ impl Runtime {
 
     fn fst_set(&self) -> &Rc<FstSet> {
         self.fst_set.get_or_init(|| {
-            Rc::new(FstSet::from_iter(self.good_icons().iter().map(|icon| &icon.name)).unwrap())
+            Rc::new(FstSet::from_iter(self.good_icons().map(|(_, icon)| &icon.name)).unwrap())
         })
     }
 
-    fn good_icons(&self) -> &Rc<Vec<Icon>> {
-        self.good_icons
-            .get_or_init(|| Rc::new(self.icons.iter().filter(|i| !i.obsolete).cloned().collect()))
+    fn good_icons(&self) -> impl Iterator<Item = (usize, &Icon)> {
+        self.icons
+            .iter()
+            .enumerate()
+            .filter(|(_, icon)| !icon.obsolete)
     }
 
     fn index(&self) -> &HashMap<char, usize> {
@@ -262,8 +241,6 @@ impl Runtime {
         self.name_index.get_or_init(|| {
             Rc::new(
                 self.good_icons()
-                    .iter()
-                    .enumerate()
                     .map(|(i, icon)| (icon.name.clone(), i))
                     .collect(),
             )
@@ -274,10 +251,50 @@ impl Runtime {
         self.corpus.get_or_init(|| {
             Rc::new(
                 CorpusBuilder::default()
-                    .fill(self.good_icons().iter().map(|icon| icon.name.clone()))
+                    .fill(self.good_icons().map(|(_, icon)| icon.name.clone()))
                     .finish(),
             )
         })
+    }
+}
+
+#[derive(Default)]
+pub struct RuntimeBuilder {
+    icons: Vec<Icon>,
+}
+
+impl RuntimeBuilder {
+    pub fn load_cache(&mut self, path: &Path) -> error::Result<()> {
+        let content = std::fs::read_to_string(path).context(error::Io(path))?;
+        for (i, line) in content.lines().enumerate() {
+            let icon = line
+                .parse::<CachedIcon>()
+                .map_err(|e| error::CorruptedCache(e, path, i).build())?;
+            self.icons.push(icon.0);
+        }
+        Ok(())
+    }
+
+    pub fn load_cheat_sheet(&mut self, path: &Path) -> error::Result<()> {
+        let content = std::fs::read_to_string(path).context(error::Io(path))?;
+        // Skips yaml metadata.
+        let Some(start) = content.find('<') else { return Ok(()) };
+        self.icons.extend(crate::parser::parse(&content[start..])?);
+        Ok(())
+    }
+
+    pub fn load_inline_cache(&mut self, cached: &str) {
+        for line in cached.lines() {
+            let icon = line.parse::<CachedIcon>().unwrap();
+            self.icons.push(icon.0);
+        }
+    }
+
+    pub fn build(self) -> Runtime {
+        Runtime {
+            icons: Rc::new(self.icons),
+            ..Default::default()
+        }
     }
 }
 
