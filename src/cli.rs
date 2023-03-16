@@ -9,12 +9,9 @@ const V_PATH: &str = "PATH";
 
 #[derive(Debug, Parser)]
 pub struct Cli {
-    /// Path(s) to load the cached content.
-    #[arg(short('c'), long, value_name(V_PATH))]
-    pub cache: Vec<PathBuf>,
-    /// Path(s) to load the icons cheat sheet.
-    #[arg(short('C'), long, value_name(V_PATH))]
-    pub cheat_sheet: Vec<PathBuf>,
+    /// Path(s) to load the icons cheat sheet or cached content.
+    #[arg(short, long, value_name(V_PATH))]
+    pub input: Vec<PathBuf>,
     #[command(subcommand)]
     pub cmd: Command,
 }

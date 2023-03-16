@@ -36,7 +36,7 @@ impl Runtime {
     }
 
     pub fn save_cache(&self, path: &Path) -> error::Result<()> {
-        let mut content = String::default();
+        let mut content = String::from("nerdfix v1\n");
         for icon in self.icons.values() {
             let icon = CachedIcon(icon);
             content.push_str(&format!("{icon}\n"));
@@ -252,30 +252,17 @@ pub struct RuntimeBuilder {
 }
 
 impl RuntimeBuilder {
-    pub fn load_cache(&mut self, path: &Path) -> error::Result<()> {
+    pub fn load_input(&mut self, path: &Path) -> error::Result<()> {
         let content = std::fs::read_to_string(path).context(error::Io(path))?;
-        for (i, line) in content.lines().enumerate() {
-            let CachedIcon(icon) = line
-                .parse()
-                .map_err(|e| error::CorruptedCache(e, path, i).build())?;
-            self.add_icon(icon);
-        }
-        Ok(())
-    }
-
-    pub fn load_cheat_sheet(&mut self, path: &Path) -> error::Result<()> {
-        let content = std::fs::read_to_string(path).context(error::Io(path))?;
-        // Skips yaml metadata.
-        let Some(start) = content.find('<') else { return Ok(()) };
-        for icon in crate::parser::parse(&content[start..])? {
+        let icons = crate::parser::parse(&content).map_err(|e| e.with_path(path))?;
+        for icon in icons {
             self.add_icon(icon);
         }
         Ok(())
     }
 
     pub fn load_inline_cache(&mut self, cached: &str) {
-        for line in cached.lines() {
-            let CachedIcon(icon) = line.parse().unwrap();
+        for icon in crate::parser::parse(cached).unwrap() {
             self.add_icon(icon);
         }
     }

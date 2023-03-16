@@ -1,15 +1,60 @@
 //! Parses font infomation from nerd font official cheat sheet.
 
-use crate::{error, icon::Icon};
+use crate::{
+    error,
+    icon::{CachedIcon, Icon},
+};
 use select::document::Document;
+use thisctx::IntoError;
 
 pub fn parse(s: &str) -> error::Result<Vec<Icon>> {
-    let mut parser = Parser::new(s);
-    parser.parse()?;
-    Ok(parser.icons)
+    if s.is_empty() {
+        return Ok(Vec::default());
+    }
+    let mut lines = s.lines().enumerate();
+    let version = (|| {
+        let (_, first_line) = lines.next()?;
+        let (brand, version) = first_line.split_once(' ')?;
+        if brand != "nerdfix" {
+            return None;
+        }
+        Some(match version {
+            "v1" => Version::V1,
+            _ => Version::Undefined,
+        })
+    })();
+    match version {
+        Some(Version::V1) => {
+            let mut icons = Vec::default();
+            for (i, line) in lines {
+                let CachedIcon(icon) = line
+                    .parse()
+                    .map_err(|e| error::CorruptedCache(e, None, i + 1).build())?;
+                icons.push(icon);
+            }
+            Ok(icons)
+        }
+        Some(Version::Undefined) => {
+            Err(error::CorruptedCache("Undefined version", None, 1usize).build())
+        }
+        None => {
+            let Some(start) = s.find('<') else { return Ok(vec![]) };
+            // Skips yaml metadata.
+            let s = &s[start..];
+            let mut parser = Parser::new(s);
+            parser.parse()?;
+            Ok(parser.icons)
+        }
+    }
 }
 
-pub struct Parser<'a> {
+#[derive(Clone, Copy, Debug)]
+enum Version {
+    Undefined,
+    V1,
+}
+
+struct Parser<'a> {
     document: Document,
     icons: Vec<Icon>,
     _source: &'a str,

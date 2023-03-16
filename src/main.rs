@@ -19,11 +19,8 @@ fn main() -> anyhow::Result<()> {
     let args = cli::Cli::parse();
     let mut rt = Runtime::builder();
     rt.load_inline_cache(CACHED);
-    for path in args.cache.iter() {
-        rt.load_cache(path)?;
-    }
-    for path in args.cheat_sheet.iter() {
-        rt.load_cheat_sheet(path)?;
+    for path in args.input.iter() {
+        rt.load_input(path)?;
     }
     let rt = rt.build();
     match args.cmd {
