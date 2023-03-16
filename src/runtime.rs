@@ -10,6 +10,7 @@ use codespan_reporting::{
     term::{self, termcolor::StandardStream},
 };
 use colored::Colorize;
+use indexmap::IndexMap;
 use inquire::InquireError;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
@@ -23,9 +24,8 @@ pub type FstSet = fst::Set<Vec<u8>>;
 
 #[derive(Default)]
 pub struct Runtime {
-    icons: Rc<Vec<Icon>>,
+    icons: Rc<IndexMap<String, Icon>>,
     index: OnceCell<HashMap<char, usize>>,
-    name_index: OnceCell<Rc<HashMap<String, usize>>>,
     corpus: OnceCell<Rc<Corpus>>,
     fst_set: OnceCell<Rc<FstSet>>,
 }
@@ -37,7 +37,7 @@ impl Runtime {
 
     pub fn save_cache(&self, path: &Path) -> error::Result<()> {
         let mut content = String::default();
-        for icon in self.icons.iter() {
+        for icon in self.icons.values() {
             let icon = CachedIcon(icon);
             content.push_str(&format!("{icon}\n"));
         }
@@ -117,8 +117,7 @@ impl Runtime {
                 if i >= MAX_CHOICES {
                     None
                 } else {
-                    let &candi = self.name_index().get(&candi.text).unwrap();
-                    Some(&self.icons[candi])
+                    Some(self.icons.get(&candi.text).unwrap())
                 }
             })
             .collect::<Vec<_>>())
@@ -167,8 +166,8 @@ impl Runtime {
             };
             let icon = match input {
                 UserInput::Name(name) => {
-                    if let Some(&icon) = self.name_index().get(&name) {
-                        &self.icons[icon]
+                    if let Some(icon) = self.icons.get(&name) {
+                        icon
                     } else {
                         cprintln!("# '{}' is not a valid icon name!", name);
                         continue;
@@ -207,7 +206,6 @@ impl Runtime {
         Autocompleter {
             icons: self.icons.clone(),
             corpus: self.corpus().clone(),
-            name_index: self.name_index().clone(),
             fst: self.fst_set().clone(),
             candidates,
             last: None,
@@ -222,7 +220,7 @@ impl Runtime {
 
     fn good_icons(&self) -> impl Iterator<Item = (usize, &Icon)> {
         self.icons
-            .iter()
+            .values()
             .enumerate()
             .filter(|(_, icon)| !icon.obsolete)
     }
@@ -230,20 +228,10 @@ impl Runtime {
     fn index(&self) -> &HashMap<char, usize> {
         self.index.get_or_init(|| {
             self.icons
-                .iter()
+                .values()
                 .enumerate()
                 .map(|(i, icon)| (icon.codepoint, i))
                 .collect()
-        })
-    }
-
-    fn name_index(&self) -> &Rc<HashMap<String, usize>> {
-        self.name_index.get_or_init(|| {
-            Rc::new(
-                self.good_icons()
-                    .map(|(i, icon)| (icon.name.clone(), i))
-                    .collect(),
-            )
         })
     }
 
@@ -260,17 +248,17 @@ impl Runtime {
 
 #[derive(Default)]
 pub struct RuntimeBuilder {
-    icons: Vec<Icon>,
+    icons: IndexMap<String, Icon>,
 }
 
 impl RuntimeBuilder {
     pub fn load_cache(&mut self, path: &Path) -> error::Result<()> {
         let content = std::fs::read_to_string(path).context(error::Io(path))?;
         for (i, line) in content.lines().enumerate() {
-            let icon = line
-                .parse::<CachedIcon>()
+            let CachedIcon(icon) = line
+                .parse()
                 .map_err(|e| error::CorruptedCache(e, path, i).build())?;
-            self.icons.push(icon.0);
+            self.add_icon(icon);
         }
         Ok(())
     }
@@ -279,14 +267,16 @@ impl RuntimeBuilder {
         let content = std::fs::read_to_string(path).context(error::Io(path))?;
         // Skips yaml metadata.
         let Some(start) = content.find('<') else { return Ok(()) };
-        self.icons.extend(crate::parser::parse(&content[start..])?);
+        for icon in crate::parser::parse(&content[start..])? {
+            self.add_icon(icon);
+        }
         Ok(())
     }
 
     pub fn load_inline_cache(&mut self, cached: &str) {
         for line in cached.lines() {
-            let icon = line.parse::<CachedIcon>().unwrap();
-            self.icons.push(icon.0);
+            let CachedIcon(icon) = line.parse().unwrap();
+            self.add_icon(icon);
         }
     }
 
@@ -294,6 +284,12 @@ impl RuntimeBuilder {
         Runtime {
             icons: Rc::new(self.icons),
             ..Default::default()
+        }
+    }
+
+    fn add_icon(&mut self, icon: Icon) {
+        if !self.icons.contains_key(&icon.name) {
+            self.icons.insert(icon.name.clone(), icon);
         }
     }
 }

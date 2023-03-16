@@ -2,19 +2,19 @@
 
 use crate::{icon::Icon, runtime::FstSet};
 use fst::{Automaton, IntoStreamer, Streamer};
+use indexmap::IndexMap;
 use inquire::Autocomplete;
 use itertools::Itertools;
 use ngrammatic::Corpus;
-use std::{collections::HashMap, rc::Rc};
+use std::rc::Rc;
 
 const SIMILARITY: f32 = 0.4;
 const MAX_CONTAINS: usize = 30;
 
 #[derive(Clone)]
 pub struct Autocompleter {
-    pub(crate) icons: Rc<Vec<Icon>>,
+    pub(crate) icons: Rc<IndexMap<String, Icon>>,
     pub(crate) corpus: Rc<Corpus>,
-    pub(crate) name_index: Rc<HashMap<String, usize>>,
     pub(crate) fst: Rc<FstSet>,
     pub(crate) candidates: usize,
     pub(crate) last: Option<String>,
@@ -68,8 +68,7 @@ impl Autocomplete for Autocompleter {
 
 impl Autocompleter {
     fn new_suggestion(&self, name: &str) -> String {
-        let &icon = self.name_index.get(name).unwrap();
-        let icon = &self.icons[icon];
+        let icon = self.icons.get(name).unwrap();
         format!("{} {}", icon.codepoint, icon.name)
     }
 }
