@@ -6,7 +6,7 @@ mod error;
 mod icon;
 mod parser;
 
-use autocomplete::{Autocompleter, SearchIndex};
+use autocomplete::Autocompleter;
 use clap::Parser;
 use cli::{Command, UserInput};
 use codespan_reporting::{
@@ -16,7 +16,6 @@ use codespan_reporting::{
 };
 use colored::Colorize;
 use icon::{CachedIcon, Icon};
-use indicium::simple::SearchIndexBuilder;
 use inquire::InquireError;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
@@ -36,14 +35,16 @@ macro_rules! cprintln {
     };
 }
 
+type FstSet = fst::Set<Vec<u8>>;
+
 #[derive(Default)]
 pub struct Runtime {
     icons: Vec<Icon>,
     good_icons: OnceCell<Rc<Vec<Icon>>>,
     index: OnceCell<HashMap<char, usize>>,
-    name_index: OnceCell<HashMap<String, usize>>,
-    corpus: OnceCell<Corpus>,
-    search_index: OnceCell<Rc<SearchIndex>>,
+    name_index: OnceCell<Rc<HashMap<String, usize>>>,
+    corpus: OnceCell<Rc<Corpus>>,
+    fst_set: OnceCell<Rc<FstSet>>,
 }
 
 impl Runtime {
@@ -239,9 +240,18 @@ impl Runtime {
     fn autocompleter(&self, candidates: usize) -> Autocompleter {
         Autocompleter {
             icons: self.good_icons().clone(),
-            corpus: self.search_index(),
+            corpus: self.corpus().clone(),
+            name_index: self.name_index().clone(),
+            fst: self.fst_set().clone(),
             candidates,
+            last: None,
         }
+    }
+
+    fn fst_set(&self) -> &Rc<FstSet> {
+        self.fst_set.get_or_init(|| {
+            Rc::new(FstSet::from_iter(self.good_icons().iter().map(|icon| &icon.name)).unwrap())
+        })
     }
 
     fn good_icons(&self) -> &Rc<Vec<Icon>> {
@@ -259,34 +269,26 @@ impl Runtime {
         })
     }
 
-    fn name_index(&self) -> &HashMap<String, usize> {
+    fn name_index(&self) -> &Rc<HashMap<String, usize>> {
         self.name_index.get_or_init(|| {
-            self.good_icons()
-                .iter()
-                .enumerate()
-                .map(|(i, icon)| (icon.name.clone(), i))
-                .collect()
+            Rc::new(
+                self.good_icons()
+                    .iter()
+                    .enumerate()
+                    .map(|(i, icon)| (icon.name.clone(), i))
+                    .collect(),
+            )
         })
     }
 
-    fn corpus(&self) -> &Corpus {
+    fn corpus(&self) -> &Rc<Corpus> {
         self.corpus.get_or_init(|| {
-            CorpusBuilder::default()
-                .fill(self.good_icons().iter().map(|icon| icon.name.clone()))
-                .finish()
+            Rc::new(
+                CorpusBuilder::default()
+                    .fill(self.good_icons().iter().map(|icon| icon.name.clone()))
+                    .finish(),
+            )
         })
-    }
-
-    fn search_index(&self) -> Rc<SearchIndex> {
-        self.search_index
-            .get_or_init(|| {
-                let mut search_index = SearchIndexBuilder::default().split_pattern(None).build();
-                for (i, icon) in self.good_icons().iter().enumerate() {
-                    search_index.insert(&i, &icon.name);
-                }
-                Rc::new(search_index)
-            })
-            .clone()
     }
 }
 
