@@ -8,6 +8,7 @@ use ngrammatic::Corpus;
 use std::{collections::HashMap, rc::Rc};
 
 const SIMILARITY: f32 = 0.4;
+const MAX_CONTAINS: usize = 30;
 
 #[derive(Clone)]
 pub struct Autocompleter {
@@ -40,7 +41,7 @@ impl Autocomplete for Autocompleter {
                             .next()
                             .map(|s| self.new_suggestion(std::str::from_utf8(s).unwrap()))
                     })
-                    .take(10),
+                    .take(MAX_CONTAINS),
                 )
                 .unique()
                 .collect::<Vec<_>>()

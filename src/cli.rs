@@ -39,7 +39,8 @@ pub enum Command {
         #[arg(value_name(V_PATH))]
         source: Vec<PathBuf>,
     },
-    // TODO: fuzzy search
+    /// Fuzzy search for an icon.
+    Search {},
 }
 
 pub enum UserInput {

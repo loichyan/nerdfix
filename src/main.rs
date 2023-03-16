@@ -121,7 +121,7 @@ impl Runtime {
                         let diag = diag.with_notes(self.diagnostic_notes(&candidates)?);
                         report!(&diag);
                         if let Some(patched) = &mut patched {
-                            match self.prompt_patched_icon(&candidates) {
+                            match self.prompt_input_icon(Some(&candidates)) {
                                 Ok(Some(c)) => {
                                     ch = c;
                                     context.history.insert(icon.codepoint, ch);
@@ -180,9 +180,10 @@ impl Runtime {
         Ok(notes)
     }
 
-    fn prompt_patched_icon(&self, candidates: &[&Icon]) -> error::Result<Option<char>> {
+    pub fn prompt_input_icon(&self, candidates: Option<&[&Icon]>) -> error::Result<Option<char>> {
+        let candidates = candidates.unwrap_or(&[]);
         Ok(loop {
-            let prompt = inquire::Text::new("Input")
+            let prompt = inquire::Text::new("Input an icon:")
                 .with_help_message("Press <Tab> to autocomplete, <Esc> to cancel, <Ctrl-C> to quit")
                 .with_autocomplete(self.autocompleter(candidates.len()));
             let input = match prompt.prompt() {
@@ -340,6 +341,9 @@ fn main() -> anyhow::Result<()> {
                     std::fs::write(path, patched).context(error::Io(path))?;
                 }
             }
+        }
+        Command::Search {} => {
+            rt.prompt_input_icon(None)?;
         }
     }
     Ok(())
