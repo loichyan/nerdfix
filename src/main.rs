@@ -343,7 +343,7 @@ fn main() -> anyhow::Result<()> {
             }
         }
         Command::Search {} => {
-            rt.prompt_input_icon(None)?;
+            rt.prompt_input_icon(None).ok();
         }
     }
     Ok(())
