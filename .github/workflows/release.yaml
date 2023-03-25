@@ -1,0 +1,64 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  rust-release:
+    strategy:
+      matrix:
+        # prettier-ignore
+        cfg:
+          - { os: macos-latest   , target: x86_64-apple-darwin        , cross: false }
+          - { os: macos-latest   , target: aarch64-apple-darwin       , cross: true  }
+          - { os: ubuntu-latest  , target: x86_64-unknown-linux-musl  , cross: false }
+          - { os: ubuntu-latest  , target: aarch64-unknown-linux-musl , cross: true  }
+          - { os: windows-latest , target: x86_64-pc-windows-msvc     , cross: false }
+          - { os: windows-latest , target: aarch64-pc-windows-msvc    , cross: true  }
+    runs-on: ${{ matrix.cfg.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain ${{ matrix.cfg.target }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          target: ${{ matrix.cfg.target }}
+
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.cfg.cross }}
+          command: build
+          args: --release --locked --target=${{ matrix.cfg.target }}
+
+      - name: Pack assets on unix
+        if: matrix.cfg.os != 'windows-latest'
+        shell: bash
+        run: |
+          asset=nerdfix-${{ matrix.cfg.target }}.tar.gz
+          cp target/${{ matrix.cfg.target }}/release/nerdfix nerdfix
+          tar -czvf nerdfix-${{ matrix.cfg.target }}.tar.gz nerdfix
+          echo "ASSET=$asset" >> $GITHUB_ENV
+
+      - name: Pack assets on windows
+        if: matrix.cfg.os == 'windows-latest'
+        shell: bash
+        run: |
+          asset=nerdfix-${{ matrix.cfg.target }}.zip
+          cp target/${{ matrix.cfg.target }}/release/nerdfix.exe nerdfix.exe
+          7z a $asset nerdfix.exe
+          echo "ASSET=$asset" >> $GITHUB_ENV
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ env.ASSET }}
