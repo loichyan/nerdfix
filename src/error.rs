@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use thisctx::WithContext;
+use thisctx::{IntoError, WithContext};
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -13,7 +13,7 @@ fn fmt_path_line(path: &Option<PathBuf>, line: &usize) -> String {
 }
 
 #[derive(Debug, Error, WithContext)]
-#[thisctx(pub(crate), suffix(false))]
+#[thisctx(pub(crate))]
 pub enum Error {
     #[error("IO failed at '{1}'")]
     Io(#[source] std::io::Error, PathBuf),
@@ -32,7 +32,7 @@ pub enum Error {
 impl Error {
     pub(crate) fn with_path(self, path: &Path) -> Self {
         match self {
-            Self::CorruptedCache(e, _, i) => Self::CorruptedCache(e, Some(path.to_owned()), i),
+            Self::CorruptedCache(e, _, i) => CorruptedCache(e, path.to_owned(), i).build(),
             _ => self,
         }
     }
