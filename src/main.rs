@@ -31,10 +31,12 @@ fn main() -> anyhow::Result<()> {
                 rt.check(&mut context, None, path)?;
             }
         }
+        // TODO: support autofix
         Command::Fix { source } => {
             let mut context = CheckerContext::default();
             for path in source.iter() {
                 let mut patched = String::default();
+                // TODO: log error and continue running
                 if rt.check(&mut context, Some(&mut patched), path)? {
                     match inquire::Confirm::new("Are your sure to write the patched content?")
                         .with_help_message("Press <Ctrl-C> to quit")
