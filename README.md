@@ -9,17 +9,17 @@
 ## 💭 Why
 
 Nerd Fonts is used in a lot of projects for a beautiful ui. It provides more
-than 10,000 icons, but some of the codepoints conflict with other fonts
-(especially CJK fonts). In order to ensure icons are in the private use area,
-Nerd Fonts has changed the codepoints of some icons in recent releases, for
-example, `nf-mdi-*` icons (including over 2,000 icons) are deprecated since
+than 10,000 icons, but some codepoints conflict with other fonts (especially CJK
+fonts). To ensure icons are in the private use area, Nerd Fonts has changed the
+codepoints of some icons in recent releases, for example, `nf-mdi-*` icons
+(including over 2,000 icons) are deprecated since
 [v2.3.3](https://github.com/ryanoasis/nerd-fonts/releases/tag/v2.3.3) and will
 be removed in v3.
 
 These icons are marked as obsolete in
 [the official cheat sheet](https://www.nerdfonts.com/cheat-sheet) and it's
 recommended to replace them with the new ones. However, you may find it boring
-to check all used icons one by one, so I wrote `nerdfix` for indexing the cheat
+to check all used icons one by one, so `nerdfix` is wrote for indexing the cheat
 sheet and finding obsolete icons in your project.
 
 ## ⚙️ Installation
@@ -33,6 +33,12 @@ override it with the latest one via `nerdfix -i /path/to/your/file` (follow
 [this link](https://github.com/ryanoasis/nerd-fonts/blob/gh-pages/_posts/2017-01-04-icon-cheat-sheet.md)
 to get the latest file).
 
+## 📋 Notice
+
+Please make sure you're using Nerd Fonts after v2.3.3, otherwise the replaced
+new icons may not be displayed correctly. If you are a plugin author, it's also
+recommended to notify this in updates.
+
 ## 🔍 Usage
 
 The `check` command checks input files and reports obsolete icons with some
@@ -42,7 +48,7 @@ suggestions that you could replace it with.
 nerdfix check test/test-data.txt
 ```
 
-You will get the output as follows:
+You get the output as follows:
 
 ```text
 warning: Found obsolete icon U+F752
