@@ -11,11 +11,17 @@ use clap::Parser;
 use cli::Command;
 use inquire::InquireError;
 use runtime::{CheckerContext, Runtime};
-use thisctx::WithContext;
+use thisctx::{IntoError, WithContext};
+use tracing::error;
 
 static CACHED: &str = include_str!("./cached.txt");
 
-fn main() -> anyhow::Result<()> {
+fn main_impl() -> error::Result<()> {
+    let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .without_time()
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).context(error::Any)?;
+
     let args = cli::Cli::parse();
     let mut rt = Runtime::builder();
     if args.input.is_empty() {
@@ -31,7 +37,7 @@ fn main() -> anyhow::Result<()> {
         Command::Check { source } => {
             let mut context = CheckerContext::default();
             for path in source.iter() {
-                rt.check(&mut context, None, path)?;
+                log_or_break!(rt.check(&mut context, None, path));
             }
         }
         // TODO: support autofix
@@ -39,17 +45,21 @@ fn main() -> anyhow::Result<()> {
             let mut context = CheckerContext::default();
             for path in source.iter() {
                 let mut patched = String::default();
-                // TODO: log error and continue running
-                if rt.check(&mut context, Some(&mut patched), path)? {
-                    match inquire::Confirm::new("Are your sure to write the patched content?")
-                        .with_help_message("Press <Ctrl-C> to quit")
-                        .prompt()
-                    {
-                        Ok(true) => std::fs::write(path, patched).context(error::Io(path))?,
-                        Err(InquireError::OperationInterrupted) => break,
-                        _ => (),
+                log_or_break!((|| {
+                    if rt.check(&mut context, Some(&mut patched), path)? {
+                        match inquire::Confirm::new("Are your sure to write the patched content?")
+                            .with_help_message("Press <Ctrl-C> to quit")
+                            .prompt()
+                        {
+                            Ok(true) => std::fs::write(path, patched).context(error::Io(path))?,
+                            Err(InquireError::OperationInterrupted) => {
+                                return error::Interrupted.fail()
+                            }
+                            _ => (),
+                        }
                     }
-                }
+                    Ok(())
+                })());
             }
         }
         Command::Search {} => {
@@ -57,4 +67,10 @@ fn main() -> anyhow::Result<()> {
         }
     }
     Ok(())
+}
+
+fn main() {
+    if let Err(e) = main_impl() {
+        log_error!(e);
+    }
 }

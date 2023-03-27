@@ -27,6 +27,8 @@ pub enum Error {
     InvalidInput,
     #[error("Operation was interrupted by the user")]
     Interrupted,
+    #[error(transparent)]
+    Any(Box<dyn Send + Sync + std::error::Error>),
 }
 
 impl Error {
