@@ -18,9 +18,12 @@ static CACHED: &str = include_str!("./cached.txt");
 fn main() -> anyhow::Result<()> {
     let args = cli::Cli::parse();
     let mut rt = Runtime::builder();
-    rt.load_inline_cache(CACHED);
-    for path in args.input.iter() {
-        rt.load_input(path)?;
+    if args.input.is_empty() {
+        rt.load_cache(CACHED);
+    } else {
+        for path in args.input.iter() {
+            rt.load_input(path)?;
+        }
     }
     let rt = rt.build();
     match args.cmd {

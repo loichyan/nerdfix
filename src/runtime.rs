@@ -261,7 +261,7 @@ impl RuntimeBuilder {
         Ok(())
     }
 
-    pub fn load_inline_cache(&mut self, cached: &str) {
+    pub fn load_cache(&mut self, cached: &str) {
         for icon in crate::parser::parse(cached).unwrap() {
             self.add_icon(icon);
         }
