@@ -41,9 +41,9 @@ pub enum Command {
         /// Auto-confirm interactive prompts.
         #[arg(short, long)]
         yes: bool,
-        /// Replace the prefix of a icon with another.
+        /// Replace the prefix of an icon name with another.
         ///
-        /// For example, use `--replace nf-mdi,nf-md` to replace all `nf-mdi*` icons
+        /// For example, use `--replace nf-mdi-,nf-md-` to replace all `nf-mdi*` icons
         /// with the same icons in `nf-md*`.
         #[arg(short, long, value_name(V_REPLACE))]
         replace: Vec<Replace>,
