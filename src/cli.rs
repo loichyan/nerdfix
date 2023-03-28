@@ -35,6 +35,9 @@ pub enum Command {
         /// Path(s) of files to check.
         #[arg(value_name(V_PATH))]
         source: Vec<PathBuf>,
+        /// Auto-confirm interactive prompts.
+        #[arg(short, long)]
+        yes: bool,
     },
     /// Fuzzy search for an icon.
     Search {},

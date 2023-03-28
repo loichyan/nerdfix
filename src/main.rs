@@ -9,10 +9,11 @@ mod runtime;
 
 use clap::Parser;
 use cli::Command;
-use inquire::InquireError;
 use runtime::{CheckerContext, Runtime};
-use thisctx::{IntoError, WithContext};
+use thisctx::WithContext;
 use tracing::error;
+
+use crate::runtime::YesOrNo;
 
 static CACHED: &str = include_str!("./cached.txt");
 
@@ -41,23 +42,22 @@ fn main_impl() -> error::Result<()> {
             }
         }
         // TODO: support autofix
-        // TODO: support --yes
-        Command::Fix { source } => {
+        Command::Fix { source, mut yes } => {
             let mut context = CheckerContext::default();
             for path in source.iter() {
                 log_or_break!((|| {
                     if let Some(patched) = rt.check(&mut context, path, true)? {
-                        // TODO: allow save all
-                        match inquire::Confirm::new("Are your sure to write the patched content?")
-                            .with_help_message("Press <Ctrl-C> to quit")
-                            .prompt()
-                        {
-                            Ok(true) => std::fs::write(path, patched).context(error::Io(path))?,
-                            Err(InquireError::OperationInterrupted) => {
-                                return error::Interrupted.fail()
+                        if !yes {
+                            match rt.prompt_yes_or_no(
+                                "Are your sure to write the patched content?",
+                                None,
+                            )? {
+                                YesOrNo::No => return Ok(()),
+                                YesOrNo::AllYes => yes = true,
+                                _ => {}
                             }
-                            _ => (),
                         }
+                        std::fs::write(path, patched).context(error::Io(path))?;
                     }
                     Ok(())
                 })());

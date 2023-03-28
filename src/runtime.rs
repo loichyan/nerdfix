@@ -14,7 +14,7 @@ use indexmap::IndexMap;
 use inquire::InquireError;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
-use std::{collections::HashMap, path::Path, rc::Rc};
+use std::{collections::HashMap, fmt, path::Path, rc::Rc, str::FromStr};
 use thisctx::{IntoError, WithContext};
 
 const SIMILARITY: f32 = 0.75;
@@ -148,9 +148,7 @@ impl Runtime {
         let candidates = candidates.unwrap_or(&[]);
         Ok(loop {
             let prompt = inquire::Text::new("Input an icon:")
-                .with_help_message(
-                    "Press <Tab> to autocomplete, <Esc> to cancel, <Ctrl-C> to finish",
-                )
+                .with_help_message("<Tab> to autocomplete, <Esc> to cancel, <Ctrl-C> to abort")
                 .with_autocomplete(self.autocompleter(candidates.len()));
             let input = match prompt.prompt() {
                 Ok(t) => t,
@@ -202,6 +200,16 @@ impl Runtime {
             cprintln!("# Your input: {}".green, icon.codepoint);
             break Some(icon.codepoint);
         })
+    }
+
+    pub fn prompt_yes_or_no(&self, msg: &str, help: Option<&str>) -> error::Result<YesOrNo> {
+        match inquire::CustomType::<YesOrNo>::new(msg)
+            .with_help_message(help.unwrap_or("Yes/No/All yes, <Ctrl-C> to abort"))
+            .prompt()
+        {
+            Err(InquireError::OperationInterrupted) => error::Interrupted.fail(),
+            t => t.context(error::Prompt),
+        }
     }
 
     fn autocompleter(&self, candidates: usize) -> Autocompleter {
@@ -297,6 +305,36 @@ impl Default for CheckerContext {
             writer: StandardStream::stderr(term::termcolor::ColorChoice::Always),
             config: term::Config::default(),
             history: HashMap::default(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum YesOrNo {
+    Yes,
+    No,
+    AllYes,
+}
+
+impl fmt::Display for YesOrNo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            YesOrNo::Yes => write!(f, "yes"),
+            YesOrNo::No => write!(f, "no"),
+            YesOrNo::AllYes => write!(f, "all yes"),
+        }
+    }
+}
+
+impl FromStr for YesOrNo {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "y" | "yes" => Ok(Self::Yes),
+            "n" | "no" => Ok(Self::No),
+            "a" | "all" => Ok(Self::AllYes),
+            _ => Err("invalid input"),
         }
     }
 }
