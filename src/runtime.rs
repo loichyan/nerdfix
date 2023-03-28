@@ -1,6 +1,6 @@
 use crate::{
     autocomplete::Autocompleter,
-    cli::UserInput,
+    cli::{Replace, UserInput},
     error,
     icon::{CachedIcon, Icon},
 };
@@ -14,11 +14,12 @@ use indexmap::IndexMap;
 use inquire::InquireError;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
-use std::{collections::HashMap, fmt, path::Path, rc::Rc, str::FromStr};
+use std::{collections::HashMap, path::Path, rc::Rc};
 use thisctx::{IntoError, WithContext};
+use tracing::warn;
 
 const SIMILARITY: f32 = 0.75;
-const MAX_CHOICES: usize = 7;
+const MAX_CHOICES: usize = 4;
 
 pub type FstSet = fst::Set<Vec<u8>>;
 
@@ -51,18 +52,11 @@ impl Runtime {
         path: &Path,
         does_fix: bool,
     ) -> error::Result<Option<String>> {
-        macro_rules! report {
-            ($diag:expr) => {
-                term::emit(&mut context.writer, &context.config, &context.files, $diag)
-                    .context(error::Reporter)?;
-            };
-        }
-
         let mut result = None::<String>;
         let content = std::fs::read_to_string(path).context(error::Io(path))?;
         let file_id = context.files.add(path.display().to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
-        for (start, ch) in content.char_indices() {
+        for (start, mut ch) in content.char_indices() {
             if let Some(&icon) = self.index().get(&ch) {
                 let icon = &self.icons[icon];
                 if icon.obsolete {
@@ -70,24 +64,31 @@ impl Runtime {
                     while !content.is_char_boundary(end) {
                         end += 1;
                     }
-                    let diag = Diagnostic::warning()
+                    let candidates = self.candidates(icon)?;
+                    let diag = Diagnostic::note()
                         .with_message(format!("Found obsolete icon U+{:X}", icon.codepoint as u32))
                         .with_labels(vec![Label::primary(file_id, start..end)
-                            .with_message(format!("Icon '{}' is marked as obsolete", icon.name))]);
+                            .with_message(format!("Icon '{}' is marked as obsolete", icon.name))])
+                        .with_notes(self.diagnostic_notes(&candidates)?);
+                    term::emit(&mut context.writer, &context.config, &context.files, &diag)
+                        .context(error::Reporter)?;
+                    // Autofix use history.
                     if let Some(&last) = context.history.get(&icon.codepoint) {
-                        report!(&diag);
-                        cprintln!("# Auto patch using last input '{}'".green, last);
+                        cprintln!("# Auto fix it using last input '{}'".green, last);
+                        ch = last;
+                    // Autofix use replacing.
+                    } else if let Some(new) = self.try_replace(context, icon) {
+                        cprintln!("# Auto replace it with '{}'".green, new);
+                        ch = new;
                     } else {
-                        let candidates = self.candidates(icon)?;
-                        report!(&diag.with_notes(self.diagnostic_notes(&candidates)?));
                         // Input a new icon
                         if does_fix {
+                            // Push all non-patched content.
                             let res = result.get_or_insert_with(|| content[..start].to_owned());
                             match self.prompt_input_icon(Some(&candidates)) {
-                                Ok(Some(ch)) => {
-                                    res.push(ch);
-                                    context.history.insert(icon.codepoint, ch);
-                                    continue;
+                                Ok(Some(new)) => {
+                                    context.history.insert(icon.codepoint, new);
+                                    ch = new;
                                 }
                                 Ok(None) => (),
                                 Err(error::Error::Interrupted) => {
@@ -100,13 +101,25 @@ impl Runtime {
                     }
                 }
             }
-            // Save other characters.
+            // Save the new character.
             if let Some(res) = result.as_mut() {
                 res.push(ch);
             }
         }
 
         Ok(result)
+    }
+
+    fn try_replace(&self, ctx: &CheckerContext, icon: &Icon) -> Option<char> {
+        for rep in ctx.replace.iter() {
+            let Some(name) = icon.name.strip_prefix(&rep.from) else { continue };
+            let Some(new_icon) = self.icons.get(&format!("{}{name}", rep.to)) else {
+                warn!("{} cannot be replaced with '{}*'", icon.name, rep.to);
+                continue;
+            };
+            return Some(new_icon.codepoint);
+        }
+        None
     }
 
     fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {
@@ -202,16 +215,6 @@ impl Runtime {
         })
     }
 
-    pub fn prompt_yes_or_no(&self, msg: &str, help: Option<&str>) -> error::Result<YesOrNo> {
-        match inquire::CustomType::<YesOrNo>::new(msg)
-            .with_help_message(help.unwrap_or("Yes/No/All yes, <Ctrl-C> to abort"))
-            .prompt()
-        {
-            Err(InquireError::OperationInterrupted) => error::Interrupted.fail(),
-            t => t.context(error::Prompt),
-        }
-    }
-
     fn autocompleter(&self, candidates: usize) -> Autocompleter {
         Autocompleter {
             icons: self.icons.clone(),
@@ -292,10 +295,11 @@ impl RuntimeBuilder {
 }
 
 pub struct CheckerContext {
-    files: SimpleFiles<String, String>,
-    writer: StandardStream,
-    config: term::Config,
-    history: HashMap<char, char>,
+    pub files: SimpleFiles<String, String>,
+    pub writer: StandardStream,
+    pub config: term::Config,
+    pub history: HashMap<char, char>,
+    pub replace: Vec<Replace>,
 }
 
 impl Default for CheckerContext {
@@ -305,36 +309,7 @@ impl Default for CheckerContext {
             writer: StandardStream::stderr(term::termcolor::ColorChoice::Always),
             config: term::Config::default(),
             history: HashMap::default(),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub enum YesOrNo {
-    Yes,
-    No,
-    AllYes,
-}
-
-impl fmt::Display for YesOrNo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            YesOrNo::Yes => write!(f, "yes"),
-            YesOrNo::No => write!(f, "no"),
-            YesOrNo::AllYes => write!(f, "all yes"),
-        }
-    }
-}
-
-impl FromStr for YesOrNo {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "y" | "yes" => Ok(Self::Yes),
-            "n" | "no" => Ok(Self::No),
-            "a" | "all" => Ok(Self::AllYes),
-            _ => Err("invalid input"),
+            replace: Vec::default(),
         }
     }
 }

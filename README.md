@@ -103,6 +103,15 @@ The prompt also provides fuzzy matched suggestions when typing the icon name:
 You can also use the `search` command to call the prompt directly for fuzzy
 search.
 
+### Autofix
+
+`nerdfix` provides some features to autofix obsolete icons:
+
+- The last input is picked if an icon appears twice.
+- Use `--replace FROM,TO` to replace the prefix of an icon name with another,
+  e.g. `nf-mdi-tab` is replaced by `nf-md-tab` when `--replace nf-mdi-,nf-md-`
+  is specified.
+
 ## ⚖️ License
 
 Licensed under either of

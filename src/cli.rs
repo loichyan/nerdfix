@@ -6,12 +6,15 @@ use std::{path::PathBuf, str::FromStr};
 use thisctx::IntoError;
 
 const V_PATH: &str = "PATH";
+const V_REPLACE: &str = "CLASSES";
 
 #[derive(Debug, Parser)]
 pub struct Cli {
     /// Path(s) to load the icons cheat sheet or cached content.
     #[arg(short, long, value_name(V_PATH))]
     pub input: Vec<PathBuf>,
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    pub verbose: u8,
     #[command(subcommand)]
     pub cmd: Command,
 }
@@ -38,6 +41,12 @@ pub enum Command {
         /// Auto-confirm interactive prompts.
         #[arg(short, long)]
         yes: bool,
+        /// Replace the prefix of an icon name with another.
+        ///
+        /// For example, use `--replace nf-mdi-,nf-md-` to replace all `nf-mdi*` icons
+        /// with the same icons in `nf-md*`.
+        #[arg(short, long, value_name(V_REPLACE))]
+        replace: Vec<Replace>,
     },
     /// Fuzzy search for an icon.
     Search {},
@@ -69,5 +78,25 @@ impl FromStr for UserInput {
         } else {
             Ok(Self::Name(s.to_owned()))
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Replace {
+    pub from: String,
+    pub to: String,
+}
+
+impl FromStr for Replace {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (from, to) = s
+            .split_once(',')
+            .ok_or("the input should be two classes separated by a comma")?;
+        Ok(Self {
+            from: from.to_owned(),
+            to: to.to_owned(),
+        })
     }
 }
