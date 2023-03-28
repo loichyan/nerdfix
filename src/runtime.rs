@@ -65,7 +65,7 @@ impl Runtime {
                         end += 1;
                     }
                     let candidates = self.candidates(icon)?;
-                    let diag = Diagnostic::warning()
+                    let diag = Diagnostic::note()
                         .with_message(format!("Found obsolete icon U+{:X}", icon.codepoint as u32))
                         .with_labels(vec![Label::primary(file_id, start..end)
                             .with_message(format!("Icon '{}' is marked as obsolete", icon.name))])
