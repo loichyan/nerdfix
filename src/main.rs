@@ -13,18 +13,25 @@ use cli::Command;
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
-use tracing::error;
+use tracing::{error, Level};
 
 static CACHED: &str = include_str!("./cached.txt");
 
 fn main_impl() -> error::Result<()> {
+    let args = cli::Cli::parse();
+
+    let lv = match args.verbose {
+        0 => Level::WARN,
+        1 => Level::INFO,
+        2 => Level::DEBUG,
+        _ => Level::TRACE,
+    };
     let subscriber = tracing_subscriber::FmtSubscriber::builder()
-        .with_max_level(tracing::Level::WARN)
+        .with_max_level(lv)
         .without_time()
         .finish();
     tracing::subscriber::set_global_default(subscriber).context(error::Any)?;
 
-    let args = cli::Cli::parse();
     let mut rt = Runtime::builder();
     if args.input.is_empty() {
         rt.load_cache(CACHED);

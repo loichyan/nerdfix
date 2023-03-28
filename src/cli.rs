@@ -13,6 +13,8 @@ pub struct Cli {
     /// Path(s) to load the icons cheat sheet or cached content.
     #[arg(short, long, value_name(V_PATH))]
     pub input: Vec<PathBuf>,
+    #[arg(short, long, action = clap::ArgAction::Count)]
+    pub verbose: u8,
     #[command(subcommand)]
     pub cmd: Command,
 }
