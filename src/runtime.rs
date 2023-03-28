@@ -48,9 +48,9 @@ impl Runtime {
     pub fn check(
         &self,
         context: &mut CheckerContext,
-        mut patched: Option<&mut String>,
         path: &Path,
-    ) -> error::Result<bool> {
+        does_fix: bool,
+    ) -> error::Result<Option<String>> {
         macro_rules! report {
             ($diag:expr) => {
                 term::emit(&mut context.writer, &context.config, &context.files, $diag)
@@ -58,20 +58,18 @@ impl Runtime {
             };
         }
 
-        let mut has_obsolete = false;
+        let mut result = None::<String>;
         let content = std::fs::read_to_string(path).context(error::Io(path))?;
         let file_id = context.files.add(path.display().to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
-        for (start, mut ch) in content.char_indices() {
+        for (start, ch) in content.char_indices() {
             if let Some(&icon) = self.index().get(&ch) {
                 let icon = &self.icons[icon];
                 if icon.obsolete {
-                    has_obsolete = true;
                     let mut end = start + 1;
                     while !content.is_char_boundary(end) {
                         end += 1;
                     }
-                    let candidates = self.candidates(icon)?;
                     let diag = Diagnostic::warning()
                         .with_message(format!("Found obsolete icon U+{:X}", icon.codepoint as u32))
                         .with_labels(vec![Label::primary(file_id, start..end)
@@ -79,20 +77,22 @@ impl Runtime {
                     if let Some(&last) = context.history.get(&icon.codepoint) {
                         report!(&diag);
                         cprintln!("# Auto patch using last input '{}'".green, last);
-                        ch = last;
                     } else {
-                        let diag = diag.with_notes(self.diagnostic_notes(&candidates)?);
-                        report!(&diag);
-                        if let Some(patched) = &mut patched {
+                        let candidates = self.candidates(icon)?;
+                        report!(&diag.with_notes(self.diagnostic_notes(&candidates)?));
+                        // Input a new icon
+                        if does_fix {
+                            let res = result.get_or_insert_with(|| content[..start].to_owned());
                             match self.prompt_input_icon(Some(&candidates)) {
-                                Ok(Some(c)) => {
-                                    ch = c;
+                                Ok(Some(ch)) => {
+                                    res.push(ch);
                                     context.history.insert(icon.codepoint, ch);
+                                    continue;
                                 }
                                 Ok(None) => (),
                                 Err(error::Error::Interrupted) => {
-                                    patched.push_str(&content[start..]);
-                                    return Ok(has_obsolete);
+                                    res.push_str(&content[start..]);
+                                    return Ok(result);
                                 }
                                 Err(e) => return Err(e),
                             }
@@ -100,11 +100,13 @@ impl Runtime {
                     }
                 }
             }
-            if let Some(patched) = &mut patched {
-                patched.push(ch);
+            // Save other characters.
+            if let Some(res) = result.as_mut() {
+                res.push(ch);
             }
         }
-        Ok(has_obsolete)
+
+        Ok(result)
     }
 
     fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {

@@ -37,16 +37,17 @@ fn main_impl() -> error::Result<()> {
         Command::Check { source } => {
             let mut context = CheckerContext::default();
             for path in source.iter() {
-                log_or_break!(rt.check(&mut context, None, path));
+                log_or_break!(rt.check(&mut context, path, false));
             }
         }
         // TODO: support autofix
+        // TODO: support --yes
         Command::Fix { source } => {
             let mut context = CheckerContext::default();
             for path in source.iter() {
-                let mut patched = String::default();
                 log_or_break!((|| {
-                    if rt.check(&mut context, Some(&mut patched), path)? {
+                    if let Some(patched) = rt.check(&mut context, path, true)? {
+                        // TODO: allow save all
                         match inquire::Confirm::new("Are your sure to write the patched content?")
                             .with_help_message("Press <Ctrl-C> to quit")
                             .prompt()
