@@ -3,6 +3,7 @@ use crate::{
     cli::{OutputFormat, Replace, UserInput},
     error,
     icon::{CachedIcon, Icon},
+    util::TryLazy,
 };
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
@@ -65,7 +66,7 @@ impl Runtime {
                     while !content.is_char_boundary(end) {
                         end += 1;
                     }
-                    let candidates = self.candidates(icon)?;
+                    let candidates = TryLazy::new(|| self.candidates(icon));
                     match context.format {
                         OutputFormat::Console => {
                             let diag = Diagnostic::new(Severity::Info.into())
@@ -78,7 +79,7 @@ impl Runtime {
                                         "Icon '{}' is marked as obsolete",
                                         icon.name
                                     ))])
-                                .with_notes(self.diagnostic_notes(&candidates)?);
+                                .with_notes(self.diagnostic_notes(candidates.get()?)?);
                             term::emit(&mut context.writer, &context.config, &context.files, &diag)
                                 .context(error::Reporter)?;
                         }
@@ -107,7 +108,7 @@ impl Runtime {
                         if does_fix {
                             // Push all non-patched content.
                             let res = result.get_or_insert_with(|| content[..start].to_owned());
-                            match self.prompt_input_icon(Some(&candidates)) {
+                            match self.prompt_input_icon(Some(candidates.get()?)) {
                                 Ok(Some(new)) => {
                                     context.history.insert(icon.codepoint, new);
                                     ch = new;
