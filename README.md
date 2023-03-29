@@ -63,6 +63,8 @@ warning: Found obsolete icon U+F752
         ...
 ```
 
+### Interactive patching
+
 The output of `fix` command is similar to `check` and shows a prompt asking the
 user to input a new icon to replace the obsolete one.
 
@@ -90,6 +92,8 @@ The prompt accepts several types of input:
 | Icon name         | `nf-md-file_document` |
 | Icon character    | `󰈙`                   |
 
+### Fuzzy autocompletion/search
+
 The prompt also provides fuzzy matched suggestions when typing the icon name:
 
 ```text
@@ -105,12 +109,26 @@ search.
 
 ### Autofix
 
-`nerdfix` provides some features to autofix obsolete icons:
+`nerdfix` provides some features to automatically patch obsolete icons:
 
 - The last input is picked if an icon appears twice.
-- Use `--replace FROM,TO` to replace the prefix of an icon name with another,
-  e.g. `nf-mdi-tab` is replaced by `nf-md-tab` when `--replace nf-mdi-,nf-md-`
-  is specified.
+- Use `fix --replace FROM,TO` to replace the prefix of an icon name with
+  another, e.g. `nf-mdi-tab` is replaced by `nf-md-tab` when
+  `--replace nf-mdi-,nf-md-` is specified.
+
+### Structured output
+
+You can use `check --format json` to get structured output for further use.
+`nerdfix` prints diagnostics with the following fields line by line:
+
+| Field       | Description                                             |
+| ----------- | ------------------------------------------------------- |
+| `severity`  | Severity of a diagnostic                                |
+| `path`      | Source file of a diagnostic                             |
+| `type`      | Diagnostic type, currently only `obsolete` is supported |
+| `span`      | Byte index span of an obsolete icon                     |
+| `name`      | Icon name                                               |
+| `codepoint` | Icon codepoint                                          |
 
 ## ⚖️ License
 
