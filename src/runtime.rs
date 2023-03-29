@@ -16,7 +16,11 @@ use inquire::InquireError;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
 use serde::Serialize;
-use std::{collections::HashMap, path::Path, rc::Rc};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 use thisctx::{IntoError, WithContext};
 use tracing::warn;
 
@@ -86,6 +90,7 @@ impl Runtime {
                         OutputFormat::Json => {
                             let diag = DiagOutput {
                                 severity: Severity::Info,
+                                path: path.to_owned(),
                                 ty: DiagType::Obsolete {
                                     span: (start, end),
                                     name: icon.name.clone(),
@@ -344,6 +349,7 @@ impl Default for CheckerContext {
 #[derive(Debug, Serialize)]
 pub struct DiagOutput {
     pub severity: Severity,
+    pub path: PathBuf,
     #[serde(flatten)]
     pub ty: DiagType,
 }
