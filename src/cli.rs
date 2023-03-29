@@ -6,7 +6,7 @@ use std::{path::PathBuf, str::FromStr};
 use thisctx::IntoError;
 
 const V_PATH: &str = "PATH";
-const V_REPLACE: &str = "CLASSES";
+const V_CLASSES: &str = "CLASSES";
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -45,7 +45,7 @@ pub enum Command {
         ///
         /// For example, use `--replace nf-mdi-,nf-md-` to replace all `nf-mdi*` icons
         /// with the same icons in `nf-md*`.
-        #[arg(short, long, value_name(V_REPLACE))]
+        #[arg(long, value_name(V_CLASSES))]
         replace: Vec<Replace>,
     },
     /// Fuzzy search for an icon.
