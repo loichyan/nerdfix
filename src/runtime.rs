@@ -1,8 +1,9 @@
 use crate::{
     autocomplete::Autocompleter,
-    cli::{Replace, UserInput},
+    cli::{OutputFormat, Replace, UserInput},
     error,
     icon::{CachedIcon, Icon},
+    util::TryLazy,
 };
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
@@ -14,7 +15,12 @@ use indexmap::IndexMap;
 use inquire::InquireError;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
-use std::{collections::HashMap, path::Path, rc::Rc};
+use serde::Serialize;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    rc::Rc,
+};
 use thisctx::{IntoError, WithContext};
 use tracing::warn;
 
@@ -64,14 +70,36 @@ impl Runtime {
                     while !content.is_char_boundary(end) {
                         end += 1;
                     }
-                    let candidates = self.candidates(icon)?;
-                    let diag = Diagnostic::note()
-                        .with_message(format!("Found obsolete icon U+{:X}", icon.codepoint as u32))
-                        .with_labels(vec![Label::primary(file_id, start..end)
-                            .with_message(format!("Icon '{}' is marked as obsolete", icon.name))])
-                        .with_notes(self.diagnostic_notes(&candidates)?);
-                    term::emit(&mut context.writer, &context.config, &context.files, &diag)
-                        .context(error::Reporter)?;
+                    let candidates = TryLazy::new(|| self.candidates(icon));
+                    match context.format {
+                        OutputFormat::Console => {
+                            let diag = Diagnostic::new(Severity::Info.into())
+                                .with_message(format!(
+                                    "Found obsolete icon U+{:X}",
+                                    icon.codepoint as u32
+                                ))
+                                .with_labels(vec![Label::primary(file_id, start..end)
+                                    .with_message(format!(
+                                        "Icon '{}' is marked as obsolete",
+                                        icon.name
+                                    ))])
+                                .with_notes(self.diagnostic_notes(candidates.get()?)?);
+                            term::emit(&mut context.writer, &context.config, &context.files, &diag)
+                                .context(error::Reporter)?;
+                        }
+                        OutputFormat::Json => {
+                            let diag = DiagOutput {
+                                severity: Severity::Info,
+                                path: path.to_owned(),
+                                ty: DiagType::Obsolete {
+                                    span: (start, end),
+                                    name: icon.name.clone(),
+                                    codepoint: icon.codepoint.into(),
+                                },
+                            };
+                            eprintln!("{}", serde_json::to_string(&diag).unwrap());
+                        }
+                    }
                     // Autofix use history.
                     if let Some(&last) = context.history.get(&icon.codepoint) {
                         cprintln!("# Auto fix it using last input '{}'".green, last);
@@ -85,7 +113,7 @@ impl Runtime {
                         if does_fix {
                             // Push all non-patched content.
                             let res = result.get_or_insert_with(|| content[..start].to_owned());
-                            match self.prompt_input_icon(Some(&candidates)) {
+                            match self.prompt_input_icon(Some(candidates.get()?)) {
                                 Ok(Some(new)) => {
                                     context.history.insert(icon.codepoint, new);
                                     ch = new;
@@ -300,6 +328,8 @@ pub struct CheckerContext {
     pub config: term::Config,
     pub history: HashMap<char, char>,
     pub replace: Vec<Replace>,
+    pub yes: bool,
+    pub format: OutputFormat,
 }
 
 impl Default for CheckerContext {
@@ -310,6 +340,46 @@ impl Default for CheckerContext {
             config: term::Config::default(),
             history: HashMap::default(),
             replace: Vec::default(),
+            yes: false,
+            format: OutputFormat::default(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct DiagOutput {
+    pub severity: Severity,
+    pub path: PathBuf,
+    #[serde(flatten)]
+    pub ty: DiagType,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum DiagType {
+    Obsolete {
+        span: (usize, usize),
+        name: String,
+        codepoint: u32,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Serialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum Severity {
+    Error,
+    Warning,
+    Info,
+    Hint,
+}
+
+impl From<Severity> for codespan_reporting::diagnostic::Severity {
+    fn from(value: Severity) -> Self {
+        match value {
+            Severity::Error => Self::Error,
+            Severity::Warning => Self::Warning,
+            Severity::Info => Self::Note,
+            Severity::Hint => Self::Help,
         }
     }
 }

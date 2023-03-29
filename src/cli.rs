@@ -1,12 +1,13 @@
 //! Command line arguments parser.
 
 use crate::error;
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use std::{path::PathBuf, str::FromStr};
 use thisctx::IntoError;
 
 const V_PATH: &str = "PATH";
-const V_REPLACE: &str = "CLASSES";
+const V_CLASSES: &str = "CLASSES";
+const V_FORMAT: &str = "FORMAT";
 
 #[derive(Debug, Parser)]
 pub struct Cli {
@@ -29,6 +30,9 @@ pub enum Command {
     },
     /// Check for obsolete icons.
     Check {
+        /// Output format of diagnostics.
+        #[arg(long, value_name(V_FORMAT), default_value("console"))]
+        format: OutputFormat,
         /// Path(s) of files to check.
         #[arg(value_name(V_PATH))]
         source: Vec<PathBuf>,
@@ -45,7 +49,7 @@ pub enum Command {
         ///
         /// For example, use `--replace nf-mdi-,nf-md-` to replace all `nf-mdi*` icons
         /// with the same icons in `nf-md*`.
-        #[arg(short, long, value_name(V_REPLACE))]
+        #[arg(long, value_name(V_CLASSES))]
         replace: Vec<Replace>,
     },
     /// Fuzzy search for an icon.
@@ -81,7 +85,7 @@ impl FromStr for UserInput {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct Replace {
     pub from: String,
     pub to: String,
@@ -99,4 +103,13 @@ impl FromStr for Replace {
             to: to.to_owned(),
         })
     }
+}
+
+#[derive(Clone, Debug, Default, ValueEnum)]
+pub enum OutputFormat {
+    #[value(help("Json output format"))]
+    Json,
+    #[default]
+    #[value(help("Human-readable output format"))]
+    Console,
 }
