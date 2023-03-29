@@ -43,31 +43,35 @@ fn main_impl() -> error::Result<()> {
     let rt = rt.build();
     match args.cmd {
         Command::Cache { output } => rt.save_cache(&output)?,
-        Command::Check { source } => {
-            let mut context = CheckerContext::default();
+        Command::Check { source, format } => {
+            let mut context = CheckerContext {
+                format,
+                ..Default::default()
+            };
             for path in source.iter() {
                 log_or_break!(rt.check(&mut context, path, false));
             }
         }
         Command::Fix {
             source,
-            mut yes,
+            yes,
             replace,
         } => {
             let mut context = CheckerContext {
                 replace,
+                yes,
                 ..Default::default()
             };
             for path in source.iter() {
                 log_or_break!((|| {
                     if let Some(patched) = rt.check(&mut context, path, true)? {
-                        if !yes {
+                        if !context.yes {
                             match prompt::prompt_yes_or_no(
                                 "Are your sure to write the patched content?",
                                 None,
                             )? {
                                 YesOrNo::No => return Ok(()),
-                                YesOrNo::AllYes => yes = true,
+                                YesOrNo::AllYes => context.yes = true,
                                 _ => {}
                             }
                         }
