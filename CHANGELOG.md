@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.2.0 (2023-03-30)
+
+### Feat
+
+- **cli**: support output structured data
+- **cli**: use `--verbose` to increase log level
+- **cli**: use `fix --replace` to auto fix icons
+- **cli**: support send yes to all prompts
+
+### Fix
+
+- **runtime**: add path in structured output
+- **runtime**: log errors and continue running
+- **runtime**: dont load inlined icons if user input is present
+
+### Refactor
+
+- **iter**: use itertools to simplify code
+- **cli**: dont allow short argument for `fix --replace`
+- **report**: change the severity of obsolete fonts to NOTE
+- **runtime**: lazily construct patched content
+
+### Perf
+
+- **runtime**: lazily initialize candidates
+
 ## v0.1.0 (2023-03-25)
 
 ### Feat
