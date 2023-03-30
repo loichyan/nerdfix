@@ -9,7 +9,7 @@ use ngrammatic::Corpus;
 use std::rc::Rc;
 
 const SIMILARITY: f32 = 0.4;
-const MAX_CONTAINS: usize = 30;
+const MAX_SUGGESTIONS: usize = 30;
 
 #[derive(Clone)]
 pub struct Autocompleter {
@@ -25,7 +25,7 @@ impl Autocomplete for Autocompleter {
         let suggestions = if input.is_empty() {
             (0..self.candidates)
                 .map(|i| (i + 1).to_string())
-                .collect::<Vec<_>>()
+                .collect_vec()
         } else {
             let mut stream = self
                 .fst
@@ -35,16 +35,14 @@ impl Autocomplete for Autocompleter {
                 .search(input, SIMILARITY)
                 .into_iter()
                 .map(|candi| self.new_suggestion(&candi.text))
-                .chain(
-                    std::iter::from_fn(|| {
-                        stream
-                            .next()
-                            .map(|s| self.new_suggestion(std::str::from_utf8(s).unwrap()))
-                    })
-                    .take(MAX_CONTAINS),
-                )
+                .chain(std::iter::from_fn(|| {
+                    stream
+                        .next()
+                        .map(|s| self.new_suggestion(std::str::from_utf8(s).unwrap()))
+                }))
                 .unique()
-                .collect::<Vec<_>>()
+                .take(MAX_SUGGESTIONS)
+                .collect_vec()
         };
         self.last = suggestions.first().cloned();
         Ok(suggestions)

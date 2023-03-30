@@ -13,6 +13,7 @@ use codespan_reporting::{
 use colored::Colorize;
 use indexmap::IndexMap;
 use inquire::InquireError;
+use itertools::Itertools;
 use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
 use serde::Serialize;
@@ -33,6 +34,7 @@ pub type FstSet = fst::Set<Vec<u8>>;
 pub struct Runtime {
     icons: Rc<IndexMap<String, Icon>>,
     index: OnceCell<HashMap<char, usize>>,
+    // TODO: find/impl a search engine that returns stable results for testing cases
     corpus: OnceCell<Rc<Corpus>>,
     fst_set: OnceCell<Rc<FstSet>>,
 }
@@ -155,15 +157,9 @@ impl Runtime {
             .corpus()
             .search(&icon.name, SIMILARITY)
             .into_iter()
-            .enumerate()
-            .filter_map(|(i, candi)| {
-                if i >= MAX_CHOICES {
-                    None
-                } else {
-                    Some(self.icons.get(&candi.text).unwrap())
-                }
-            })
-            .collect::<Vec<_>>())
+            .map(|candi| self.icons.get(&candi.text).unwrap())
+            .take(MAX_CHOICES)
+            .collect_vec())
     }
 
     fn diagnostic_notes(&self, candidates: &[&Icon]) -> error::Result<Vec<String>> {
