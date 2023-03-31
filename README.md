@@ -8,32 +8,32 @@
 
 ## 💭 Why
 
-Nerd Fonts is used in a lot of projects for a beautiful ui. It provides more
-than 10,000 icons, but some codepoints conflict with other fonts (especially CJK
-fonts). To ensure icons are in the private use area, Nerd Fonts has changed the
-codepoints of some icons in recent releases, for example, `nf-mdi-*` icons
-(including over 2,000 icons) are deprecated since
+Nerd Fonts is used in many projects for a beautiful UI. It provides more than
+10,000 icons, but some codepoints conflict with other fonts (especially CJK
+fonts). To ensure that the icons remain in the private use area, Nerd Fonts has
+changed the codepoints of some icons in recent releases, for example, `nf-mdi-*`
+icons (including over 2,000 icons) are deprecated since
 [v2.3.3](https://github.com/ryanoasis/nerd-fonts/releases/tag/v2.3.3) and will
 be removed in v3.
 
 These icons are marked as obsolete in
 [the official cheat sheet](https://www.nerdfonts.com/cheat-sheet) and it's
 recommended to replace them with the new ones. However, you may find it boring
-to check all used icons one by one, so `nerdfix` is wrote for indexing the cheat
-sheet and finding obsolete icons in your project.
+to check all the used icons one by one, so `nerdfix` was written to index the
+cheat sheet and find obsolete icons in your project.
 
 ## ⚙️ Installation
 
 You can download the pre-built binaries from
 [the release page](https://github.com/loichyan/nerdfix/releases/latest) or
-manually build this project from the source.
+manually build this project manually from source.
 
 In addition, the binaries come with a recently updated cheat sheet and you can
-override it with the latest one via `nerdfix -i /path/to/your/file` (follow
+overwrite it with the latest one using `nerdfix -i /path/to/your/file` (follow
 [this link](https://github.com/ryanoasis/nerd-fonts/blob/gh-pages/_posts/2017-01-04-icon-cheat-sheet.md)
 to get the latest file).
 
-## 📋 Notice
+## 📋 Note
 
 Please make sure you're using Nerd Fonts after v2.3.3, otherwise the replaced
 new icons may not be displayed correctly. If you are a plugin author, it's also
@@ -42,7 +42,7 @@ recommended to notify this in updates.
 ## 🔍 Usage
 
 The `check` command checks input files and reports obsolete icons with some
-suggestions that you could replace it with.
+suggestions that you could replace them with.
 
 ```sh
 nerdfix check test/test-data.txt
@@ -65,8 +65,8 @@ warning: Found obsolete icon U+F752
 
 ### Interactive patching
 
-The output of `fix` command is similar to `check` and shows a prompt asking the
-user to input a new icon to replace the obsolete one.
+The `fix` command reports the same information as `check` and displays a prompt
+asking the user to input a new icon to replace the obsolete one.
 
 ```text
 warning: Found obsolete icon U+F719
@@ -94,7 +94,7 @@ The prompt accepts several types of input:
 
 ### Fuzzy autocompletion/search
 
-The prompt also provides fuzzy matched suggestions when typing the icon name:
+The prompt also provides fuzzy matching suggestions when you type the icon name:
 
 ```text
 > Input an icon: documentmultiple
@@ -104,7 +104,7 @@ The prompt also provides fuzzy matched suggestions when typing the icon name:
   ...
 ```
 
-You can also use the `search` command to call the prompt directly for fuzzy
+You can also use the `search` command to call the prompt directly for a fuzzy
 search.
 
 ### Autofix
@@ -113,7 +113,7 @@ search.
 
 - The last input is picked if an icon appears twice.
 - Use `fix --replace FROM,TO` to replace the prefix of an icon name with
-  another, e.g. `nf-mdi-tab` is replaced by `nf-md-tab` when
+  another, e.g. `nf-mdi-tab` is replaced with `nf-md-tab` when
   `--replace nf-mdi-,nf-md-` is specified.
 
 ### Structured output
