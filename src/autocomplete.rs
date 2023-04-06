@@ -1,11 +1,13 @@
 //! Autocompletion and fuzzy search for nerd fonts.
 
-use crate::{icon::Icon, runtime::FstSet};
+use crate::{
+    icon::Icon,
+    runtime::{FstSet, NGram},
+};
 use fst::{Automaton, IntoStreamer, Streamer};
 use indexmap::IndexMap;
 use inquire::Autocomplete;
 use itertools::Itertools;
-use ngrammatic::Corpus;
 use std::rc::Rc;
 
 const SIMILARITY: f32 = 0.4;
@@ -14,7 +16,7 @@ const MAX_SUGGESTIONS: usize = 30;
 #[derive(Clone)]
 pub struct Autocompleter {
     pub(crate) icons: Rc<IndexMap<String, Icon>>,
-    pub(crate) corpus: Rc<Corpus>,
+    pub(crate) corpus: Rc<NGram>,
     pub(crate) fst: Rc<FstSet>,
     pub(crate) candidates: usize,
     pub(crate) last: Option<String>,
@@ -32,9 +34,10 @@ impl Autocomplete for Autocompleter {
                 .search(Contains(fst::automaton::Str::new(input)))
                 .into_stream();
             self.corpus
-                .search(input, SIMILARITY)
-                .into_iter()
-                .map(|candi| self.new_suggestion(&candi.text))
+                .searcher(input)
+                .threshold(SIMILARITY)
+                .exec_sorted()
+                .map(|((name, _), _)| self.new_suggestion(name))
                 .chain(std::iter::from_fn(|| {
                     stream
                         .next()

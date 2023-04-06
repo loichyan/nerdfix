@@ -394,7 +394,7 @@ dependencies = [
  "indexmap",
  "inquire",
  "itertools",
- "ngrammatic",
+ "noodler",
  "once_cell",
  "select",
  "serde",
@@ -421,10 +421,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "ngrammatic"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3c6f2f987e82da7fb8a290e959bba528638bc0e2629e38647591e845ecb5f6fe"
+name = "noodler"
+version = "0.0.0"
+source = "git+https://github.com/loichyan/noodler#eaa9884eb9ef7ae8a2b65fa403c920c32376a150"
 
 [[package]]
 name = "nu-ansi-term"

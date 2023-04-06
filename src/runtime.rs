@@ -14,7 +14,6 @@ use colored::Colorize;
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
-use ngrammatic::{Corpus, CorpusBuilder};
 use once_cell::unsync::OnceCell;
 use serde::Serialize;
 use std::{
@@ -25,17 +24,19 @@ use std::{
 use thisctx::{IntoError, WithContext};
 use tracing::warn;
 
-const SIMILARITY: f32 = 0.75;
+const SIMILARITY: f32 = 0.7;
+const WARP: f32 = 3.0;
 const MAX_CHOICES: usize = 4;
 
 pub type FstSet = fst::Set<Vec<u8>>;
+pub type NGram = noodler::NGram<(String, usize)>;
 
 #[derive(Default)]
 pub struct Runtime {
     icons: Rc<IndexMap<String, Icon>>,
     index: OnceCell<HashMap<char, usize>>,
     // TODO: find/impl a search engine that returns stable results for testing cases
-    corpus: OnceCell<Rc<Corpus>>,
+    corpus: OnceCell<Rc<NGram>>,
     fst_set: OnceCell<Rc<FstSet>>,
 }
 
@@ -155,9 +156,8 @@ impl Runtime {
     fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {
         Ok(self
             .corpus()
-            .search(&icon.name, SIMILARITY)
-            .into_iter()
-            .map(|candi| self.icons.get(&candi.text).unwrap())
+            .search_sorted(&icon.name)
+            .map(|((_, id), _)| &self.icons[*id])
             .take(MAX_CHOICES)
             .collect_vec())
     }
@@ -272,12 +272,15 @@ impl Runtime {
         })
     }
 
-    fn corpus(&self) -> &Rc<Corpus> {
+    fn corpus(&self) -> &Rc<NGram> {
         self.corpus.get_or_init(|| {
             Rc::new(
-                CorpusBuilder::default()
-                    .fill(self.good_icons().map(|(_, icon)| icon.name.clone()))
-                    .finish(),
+                NGram::builder()
+                    .arity(3)
+                    .warp(WARP)
+                    .threshold(SIMILARITY)
+                    .build()
+                    .fill(self.good_icons().map(|(i, icon)| (icon.name.to_owned(), i))),
             )
         })
     }
