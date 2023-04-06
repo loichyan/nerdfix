@@ -1,3 +1,4 @@
+use noodler::NGramSearcher;
 use once_cell::unsync::OnceCell;
 use std::{cell::Cell, fmt, marker::PhantomData};
 
@@ -88,5 +89,25 @@ impl<T, E, F: FnOnce() -> Result<T, E>> TryLazy<T, E, F> {
 
     pub fn get(&self) -> Result<&T, E> {
         self.cell.get_or_try_init(|| self.init.take().unwrap()())
+    }
+}
+
+pub trait NGramSearcherExt<'i, 'a, T>: Sized {
+    #[doc(hidden)]
+    fn __into(self) -> NGramSearcher<'i, 'a, T>;
+
+    fn exec_sorted_stable(self) -> <Vec<(&'i T, f32)> as IntoIterator>::IntoIter
+    where
+        T: noodler::Keyed + Ord,
+    {
+        let mut matches = self.__into().exec().collect::<Vec<_>>();
+        matches.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then_with(|| a.0.cmp(b.0)));
+        matches.into_iter()
+    }
+}
+
+impl<'i, 'a, T> NGramSearcherExt<'i, 'a, T> for NGramSearcher<'i, 'a, T> {
+    fn __into(self) -> NGramSearcher<'i, 'a, T> {
+        self
     }
 }

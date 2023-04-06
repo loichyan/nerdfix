@@ -3,6 +3,7 @@
 use crate::{
     icon::Icon,
     runtime::{FstSet, NGram},
+    util::NGramSearcherExt,
 };
 use fst::{Automaton, IntoStreamer, Streamer};
 use indexmap::IndexMap;
@@ -36,7 +37,7 @@ impl Autocomplete for Autocompleter {
             self.corpus
                 .searcher(input)
                 .threshold(SIMILARITY)
-                .exec_sorted()
+                .exec_sorted_stable()
                 .map(|((name, _), _)| self.new_suggestion(name))
                 .chain(std::iter::from_fn(|| {
                     stream

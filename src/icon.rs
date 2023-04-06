@@ -9,6 +9,18 @@ pub struct Icon {
     pub obsolete: bool,
 }
 
+impl PartialOrd for Icon {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.name.partial_cmp(&other.name)
+    }
+}
+
+impl Ord for Icon {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+
 pub struct CachedIcon<T = Icon>(pub T);
 
 impl FromStr for CachedIcon {

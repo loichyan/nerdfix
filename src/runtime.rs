@@ -3,7 +3,7 @@ use crate::{
     cli::{OutputFormat, Replace, UserInput},
     error,
     icon::{CachedIcon, Icon},
-    util::TryLazy,
+    util::{NGramSearcherExt, TryLazy},
 };
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
@@ -156,7 +156,8 @@ impl Runtime {
     fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {
         Ok(self
             .corpus()
-            .search_sorted(&icon.name)
+            .searcher(&icon.name)
+            .exec_sorted_stable()
             .map(|((_, id), _)| &self.icons[*id])
             .take(MAX_CHOICES)
             .collect_vec())
@@ -280,7 +281,11 @@ impl Runtime {
                     .warp(WARP)
                     .threshold(SIMILARITY)
                     .build()
-                    .fill(self.good_icons().map(|(i, icon)| (icon.name.to_owned(), i))),
+                    .fill(
+                        self.good_icons()
+                            .map(|(i, icon)| (icon.name.to_owned(), i))
+                            .sorted_by(|(a, _), (b, _)| a.cmp(b)),
+                    ),
             )
         })
     }
