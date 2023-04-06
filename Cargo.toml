@@ -28,3 +28,8 @@ features = ["derive"]
 [dependencies.clap]
 version = "4.1"
 features = ["derive"]
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.0"
+strip-ansi-escapes = "0.1"

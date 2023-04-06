@@ -1,0 +1,18 @@
+note: Found obsolete icon U+F719
+  ┌─ tests/test-data.txt:4:29
+  │
+4 │ nf-mdi-file_document_box = ""
+  │                             ^ Icon 'nf-mdi-file_document_box' is marked as obsolete
+  │
+  = You could replace it with:
+        1. 󰈙 U+F0219 nf-md-file_document
+
+note: Found obsolete icon U+F719
+  ┌─ tests/test-data.txt:8:29
+  │
+8 │ nf-mdi-file_document_box = ""
+  │                             ^ Icon 'nf-mdi-file_document_box' is marked as obsolete
+  │
+  = You could replace it with:
+        1. 󰈙 U+F0219 nf-md-file_document
+

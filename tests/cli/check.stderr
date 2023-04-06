@@ -1,0 +1,84 @@
+note: Found obsolete icon U+F752
+  ┌─ tests/test-data.txt:1:27
+  │
+1 │ nf-mdi-folder_multiple = ""
+  │                           ^ Icon 'nf-mdi-folder_multiple' is marked as obsolete
+  │
+  = You could replace it with:
+        1. 󰉓 U+F0253 nf-md-folder_multiple
+        2. 󱏓 U+F13D3 nf-md-folder_star_multiple
+        3. 󰉔 U+F0254 nf-md-folder_multiple_image
+        4. 󱑾 U+F147E nf-md-folder_multiple_plus
+
+note: Found obsolete icon U+F719
+  ┌─ tests/test-data.txt:4:29
+  │
+4 │ nf-mdi-file_document_box = ""
+  │                             ^ Icon 'nf-mdi-file_document_box' is marked as obsolete
+  │
+  = You could replace it with:
+        1. 󰈙 U+F0219 nf-md-file_document
+        2. 󰷈 U+F0DC8 nf-md-file_document_edit
+        3. 󱪝 U+F1A9D nf-md-file_document_plus
+        4. 󱪗 U+F1A97 nf-md-file_document_alert
+
+note: Found obsolete icon U+F719
+  ┌─ tests/test-data.txt:8:29
+  │
+8 │ nf-mdi-file_document_box = ""
+  │                             ^ Icon 'nf-mdi-file_document_box' is marked as obsolete
+  │
+  = You could replace it with:
+        1. 󰈙 U+F0219 nf-md-file_document
+        2. 󰷈 U+F0DC8 nf-md-file_document_edit
+        3. 󱪝 U+F1A9D nf-md-file_document_plus
+        4. 󱪗 U+F1A97 nf-md-file_document_alert
+
+note: Found obsolete icon U+F7A1
+   ┌─ tests/test-data.txt:11:15
+   │
+11 │ nf-mdi-git = "",
+   │               ^ Icon 'nf-mdi-git' is marked as obsolete
+   │
+   = You could replace it with:
+         1. 󰊢 U+F02A2 nf-md-git
+         2.  U+E65D nf-seti-git
+         3.  U+F1D3 nf-fa-git
+         4.  U+E702 nf-dev-git
+
+note: Found obsolete icon U+F9E8
+   ┌─ tests/test-data.txt:14:15
+   │
+14 │ nf-mdi-tab = "裡"
+   │               ^^ Icon 'nf-mdi-tab' is marked as obsolete
+   │
+   = You could replace it with:
+         1. 󰓩 U+F04E9 nf-md-tab
+         2. 󰓫 U+F04EB nf-md-table
+         3. 󰮠 U+F0BA0 nf-md-gitlab
+         4. 󰓶 U+F04F6 nf-md-tablet
+
+note: Found obsolete icon U+FC0A
+   ┌─ tests/test-data.txt:17:27
+   │
+17 │ nf-mdi-rhombus_outline = "ﰊ"
+   │                           ^ Icon 'nf-mdi-rhombus_outline' is marked as obsolete
+   │
+   = You could replace it with:
+         1. 󰜌 U+F070C nf-md-rhombus_outline
+         2. 󰮦 U+F0BA6 nf-md-help_rhombus_outline
+         3. 󱇏 U+F11CF nf-md-alert_rhombus_outline
+         4. 󱓝 U+F14DD nf-md-rhombus_split_outline
+
+note: Found obsolete icon U+F554
+   ┌─ tests/test-data.txt:20:29
+   │
+20 │ nf-mdi-arrow_right_thick = ""
+   │                             ^ Icon 'nf-mdi-arrow_right_thick' is marked as obsolete
+   │
+   = You could replace it with:
+         1. 󰁕 U+F0055 nf-md-arrow_right_thick
+         2. 󰧆 U+F09C6 nf-md-arrow_top_right_thick
+         3. 󱦰 U+F19B0 nf-md-arrow_right_thin
+         4. 󰦺 U+F09BA nf-md-arrow_bottom_right_thick
+
