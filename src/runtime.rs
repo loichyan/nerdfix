@@ -236,7 +236,7 @@ impl Runtime {
                     }
                 }
             };
-            cprintln!("# Your input: {}".green, icon.codepoint);
+            cprintln!("# Your input: {} {}".green, icon.codepoint, icon.name);
             break Some(icon.codepoint);
         })
     }
