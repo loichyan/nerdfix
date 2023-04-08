@@ -60,11 +60,7 @@ impl Autocomplete for Autocompleter {
         Ok(highlighted_suggestion
             .as_ref()
             .or(self.last.as_ref())
-            .map(|s| {
-                s.split_once(' ')
-                    .map(|(_, s)| s.to_owned())
-                    .unwrap_or_else(|| s.clone())
-            }))
+            .map(ToOwned::to_owned))
     }
 }
 

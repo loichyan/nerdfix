@@ -194,6 +194,7 @@ impl Runtime {
                 Err(InquireError::OperationInterrupted) => return Err(error::Interrupted.build()),
                 Err(e) => return Err(error::Prompt.into_error(e)),
             };
+            let input = input.split_whitespace().next().unwrap_or("");
             let input = match input.parse::<UserInput>() {
                 Ok(t) => t,
                 Err(error::Error::InvalidInput) => {
