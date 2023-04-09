@@ -24,20 +24,19 @@ use std::{
 use thisctx::{IntoError, WithContext};
 use tracing::warn;
 
-const SIMILARITY: f32 = 0.7;
+const ARITY: usize = 3;
+const PAD_LEN: usize = 2;
 const WARP: f32 = 3.0;
+const THRESHOLD: f32 = 0.7;
 const MAX_CHOICES: usize = 4;
 
-pub type FstSet = fst::Set<Vec<u8>>;
 pub type NGram = noodler::NGram<(String, usize)>;
 
 #[derive(Default)]
 pub struct Runtime {
     icons: Rc<IndexMap<String, Icon>>,
     index: OnceCell<HashMap<char, usize>>,
-    // TODO: find/impl a search engine that returns stable results for testing cases
     corpus: OnceCell<Rc<NGram>>,
-    fst_set: OnceCell<Rc<FstSet>>,
 }
 
 impl Runtime {
@@ -245,16 +244,9 @@ impl Runtime {
         Autocompleter {
             icons: self.icons.clone(),
             corpus: self.corpus().clone(),
-            fst: self.fst_set().clone(),
             candidates,
             last: None,
         }
-    }
-
-    fn fst_set(&self) -> &Rc<FstSet> {
-        self.fst_set.get_or_init(|| {
-            Rc::new(FstSet::from_iter(self.good_icons().map(|(_, icon)| &icon.name)).unwrap())
-        })
     }
 
     fn good_icons(&self) -> impl Iterator<Item = (usize, &Icon)> {
@@ -278,9 +270,10 @@ impl Runtime {
         self.corpus.get_or_init(|| {
             Rc::new(
                 NGram::builder()
-                    .arity(3)
+                    .arity(ARITY)
+                    .pad_len(PAD_LEN)
                     .warp(WARP)
-                    .threshold(SIMILARITY)
+                    .threshold(THRESHOLD)
                     .build()
                     .fill(
                         self.good_icons()
