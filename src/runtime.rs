@@ -182,9 +182,14 @@ impl Runtime {
     }
 
     pub fn prompt_input_icon(&self, candidates: Option<&[&Icon]>) -> error::Result<Option<char>> {
+        fn fmt_input(s: &str) -> &str {
+            s.split_ascii_whitespace().next().unwrap_or("")
+        }
+
         let candidates = candidates.unwrap_or(&[]);
         Ok(loop {
             let prompt = inquire::Text::new("Input an icon:")
+                .with_formatter(&|s| fmt_input(s).to_owned())
                 .with_help_message("<Tab> to autocomplete, <Esc> to cancel, <Ctrl-C> to abort")
                 .with_autocomplete(self.autocompleter(candidates.len()));
             let input = match prompt.prompt() {
@@ -193,7 +198,7 @@ impl Runtime {
                 Err(InquireError::OperationInterrupted) => return Err(error::Interrupted.build()),
                 Err(e) => return Err(error::Prompt.into_error(e)),
             };
-            let input = input.split_whitespace().next().unwrap_or("");
+            let input = fmt_input(&input);
             let input = match input.parse::<UserInput>() {
                 Ok(t) => t,
                 Err(error::Error::InvalidInput) => {
