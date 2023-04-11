@@ -493,8 +493,9 @@ dependencies = [
 
 [[package]]
 name = "noodler"
-version = "0.0.0"
-source = "git+https://github.com/loichyan/noodler#102b162760eef81e0f3d77b1ba0e4077f6e0cee9"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c5857a5a10fbc9a8d8dfd92ef674ad18c79bc07c9e0e980c01a59adf7a37b98"
 
 [[package]]
 name = "normalize-line-endings"
