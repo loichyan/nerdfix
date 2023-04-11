@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.2.1 (2023-04-11)
+
+### Feat
+
+- **search**: print the icon name
+
+### Fix
+
+- **prompt**: display formatted user input
+- **search**: use the first string of user input
+- **runtime**: sort candidates by their names for stable results
+
+### Refactor
+
+- **search**: use n-grams to search subset matches
+- **runtime**: replace ngrammatic with noodler
+
 ## v0.2.0 (2023-03-30)
 
 ### Feat
