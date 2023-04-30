@@ -32,6 +32,9 @@ jobs:
           override: true
           target: ${{ matrix.cfg.target }}
 
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
       - name: Build
         uses: actions-rs/cargo@v1
         with:
