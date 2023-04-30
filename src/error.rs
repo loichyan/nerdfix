@@ -20,9 +20,17 @@ pub enum Error {
     #[error("{0} at {}", fmt_path_line(.1, .2))]
     CorruptedCache(String, Option<PathBuf>, usize),
     #[error("Failed when reporting diagnostics")]
-    Reporter(#[source] codespan_reporting::files::Error),
+    Reporter(
+        #[from]
+        #[source]
+        codespan_reporting::files::Error,
+    ),
     #[error("Failed when prompting")]
-    Prompt(#[source] inquire::InquireError),
+    Prompt(
+        #[from]
+        #[source]
+        inquire::InquireError,
+    ),
     #[error("Invalid input")]
     InvalidInput,
     #[error("Operation was interrupted by the user")]

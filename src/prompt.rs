@@ -1,7 +1,7 @@
 use crate::error;
 use inquire::InquireError;
 use std::{fmt, str::FromStr};
-use thisctx::{IntoError, WithContext};
+use thisctx::IntoError;
 
 pub fn prompt_yes_or_no(msg: &str, help: Option<&str>) -> error::Result<YesOrNo> {
     match inquire::CustomType::<YesOrNo>::new(msg)
@@ -9,7 +9,7 @@ pub fn prompt_yes_or_no(msg: &str, help: Option<&str>) -> error::Result<YesOrNo>
         .prompt()
     {
         Err(InquireError::OperationInterrupted) => error::Interrupted.fail(),
-        t => t.context(error::Prompt),
+        t => Ok(t?),
     }
 }
 

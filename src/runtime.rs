@@ -86,8 +86,12 @@ impl Runtime {
                                         icon.name
                                     ))])
                                 .with_notes(self.diagnostic_notes(candidates.get()?)?);
-                            term::emit(&mut context.writer, &context.config, &context.files, &diag)
-                                .context(error::Reporter)?;
+                            term::emit(
+                                &mut context.writer,
+                                &context.config,
+                                &context.files,
+                                &diag,
+                            )?;
                         }
                         OutputFormat::Json => {
                             let diag = DiagOutput {
@@ -196,7 +200,7 @@ impl Runtime {
                 Ok(t) => t,
                 Err(InquireError::OperationCanceled) => break None,
                 Err(InquireError::OperationInterrupted) => return Err(error::Interrupted.build()),
-                Err(e) => return Err(error::Prompt.into_error(e)),
+                Err(e) => return Err(e.into()),
             };
             let input = fmt_input(&input);
             let input = match input.parse::<UserInput>() {
