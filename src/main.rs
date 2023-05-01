@@ -8,6 +8,8 @@ mod parser;
 mod prompt;
 mod runtime;
 
+shadow_rs::shadow!(shadow);
+
 use clap::Parser;
 use cli::Command;
 use prompt::YesOrNo;

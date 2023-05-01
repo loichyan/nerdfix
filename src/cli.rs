@@ -1,15 +1,20 @@
 //! Command line arguments parser.
 
-use crate::error;
+use crate::{error, shadow};
 use clap::{Parser, Subcommand, ValueEnum};
+use shadow_rs::formatcp;
 use std::{path::PathBuf, str::FromStr};
 use thisctx::IntoError;
 
 const V_PATH: &str = "PATH";
 const V_CLASSES: &str = "CLASSES";
 const V_FORMAT: &str = "FORMAT";
+const CACHE_VERSION: &str = include_str!("cache-version");
+const CLAP_LONG_VERSION: &str =
+    formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, CACHE_VERSION);
 
 #[derive(Debug, Parser)]
+#[command(author, version, long_version = CLAP_LONG_VERSION)]
 pub struct Cli {
     /// Path(s) to load the icons cheat sheet or cached content.
     #[arg(short, long, value_name(V_PATH))]
