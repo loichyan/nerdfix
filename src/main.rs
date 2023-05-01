@@ -75,7 +75,8 @@ fn main_impl() -> error::Result<()> {
                                 _ => {}
                             }
                         }
-                        std::fs::write(path, patched).context(error::Io(path))?;
+                        std::fs::write(path, patched)
+                            .context_with(|| error::Io(path.to_owned()))?;
                     }
                     Ok(())
                 })());

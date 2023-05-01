@@ -1,23 +1,27 @@
 use std::path::{Path, PathBuf};
-use thisctx::{IntoError, WithContext};
+use thisctx::WithContext;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-fn fmt_path_line(path: &Option<PathBuf>, line: &usize) -> String {
-    if let Some(path) = path {
-        format!("'{}:{line}'", path.display())
-    } else {
-        format!("line {line}")
-    }
+fn with_opt_path(e: &dyn std::fmt::Display, path: &Option<PathBuf>) -> String {
+    path.as_deref()
+        .map(|p| format!("{e} at '{}'", p.display()))
+        .unwrap_or_else(|| e.to_string())
+}
+
+fn with_opt_path_line(e: &dyn std::fmt::Display, path: &Option<PathBuf>, line: &usize) -> String {
+    path.as_deref()
+        .map(|p| format!("{e} at '{}:{line}'", p.display()))
+        .unwrap_or_else(|| format!("{e} at line {line}"))
 }
 
 #[derive(Debug, Error, WithContext)]
 #[thisctx(pub(crate))]
 pub enum Error {
-    #[error("IO failed at '{1}'")]
-    Io(#[source] std::io::Error, PathBuf),
-    #[error("{0} at {}", fmt_path_line(.1, .2))]
+    #[error("{}", with_opt_path(.0, .1))]
+    Io(#[source] std::io::Error, Option<PathBuf>),
+    #[error("{}", with_opt_path_line(.0, .1, .2))]
     CorruptedCache(String, Option<PathBuf>, usize),
     #[error("Failed when reporting diagnostics")]
     Reporter(
@@ -39,11 +43,13 @@ pub enum Error {
     Any(Box<dyn Send + Sync + std::error::Error>),
 }
 
-impl Error {
-    pub(crate) fn with_path(self, path: &Path) -> Self {
-        match self {
-            Self::CorruptedCache(e, _, i) => CorruptedCache(e, path.to_owned(), i).build(),
-            _ => self,
-        }
+#[extend::ext(pub(crate))]
+impl<T> Result<T> {
+    fn with_path(self, path: &Path) -> Self {
+        self.map_err(|e| match e {
+            Error::Io(e, None) => Error::Io(e, Some(path.to_owned())),
+            Error::CorruptedCache(e, None, i) => Error::CorruptedCache(e, Some(path.to_owned()), i),
+            _ => e,
+        })
     }
 }

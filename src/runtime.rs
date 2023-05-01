@@ -1,7 +1,7 @@
 use crate::{
     autocomplete::Autocompleter,
     cli::{OutputFormat, Replace, UserInput},
-    error,
+    error::{self, ResultTExt},
     icon::{CachedIcon, Icon},
     util::{NGramSearcherExt, TryLazy},
 };
@@ -50,7 +50,7 @@ impl Runtime {
             let icon = CachedIcon(icon);
             content.push_str(&format!("{icon}\n"));
         }
-        std::fs::write(path, content).context(error::Io(path))?;
+        std::fs::write(path, content).context_with(|| error::Io(path.to_owned()))?;
         Ok(())
     }
 
@@ -61,7 +61,7 @@ impl Runtime {
         does_fix: bool,
     ) -> error::Result<Option<String>> {
         let mut result = None::<String>;
-        let content = std::fs::read_to_string(path).context(error::Io(path))?;
+        let content = std::fs::read_to_string(path).context_with(|| error::Io(path.to_owned()))?;
         let file_id = context.files.add(path.display().to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
         for (start, mut ch) in content.char_indices() {
@@ -301,8 +301,8 @@ pub struct RuntimeBuilder {
 
 impl RuntimeBuilder {
     pub fn load_input(&mut self, path: &Path) -> error::Result<()> {
-        let content = std::fs::read_to_string(path).context(error::Io(path))?;
-        let icons = crate::parser::parse(&content).map_err(|e| e.with_path(path))?;
+        let content = std::fs::read_to_string(path).context_with(|| error::Io(path.to_owned()))?;
+        let icons = crate::parser::parse(&content).with_path(path)?;
         for icon in icons {
             self.add_icon(icon);
         }
