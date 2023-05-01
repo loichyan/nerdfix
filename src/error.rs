@@ -4,24 +4,24 @@ use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-fn with_opt_path(e: &dyn std::fmt::Display, path: &Option<PathBuf>) -> String {
+fn with_opt_path(path: &Option<PathBuf>) -> String {
     path.as_deref()
-        .map(|p| format!("{e} at '{}'", p.display()))
-        .unwrap_or_else(|| e.to_string())
+        .map(|p| format!(" at '{}'", p.display()))
+        .unwrap_or_default()
 }
 
-fn with_opt_path_line(e: &dyn std::fmt::Display, path: &Option<PathBuf>, line: &usize) -> String {
+fn with_opt_path_line(path: &Option<PathBuf>, line: &usize) -> String {
     path.as_deref()
-        .map(|p| format!("{e} at '{}:{line}'", p.display()))
-        .unwrap_or_else(|| format!("{e} at line {line}"))
+        .map(|p| format!(" at '{}:{line}'", p.display()))
+        .unwrap_or_else(|| format!(" at line {line}"))
 }
 
 #[derive(Debug, Error, WithContext)]
 #[thisctx(pub(crate))]
 pub enum Error {
-    #[error("{}", with_opt_path(.0, .1))]
+    #[error("Io failed{}", with_opt_path(.1))]
     Io(#[source] std::io::Error, Option<PathBuf>),
-    #[error("{}", with_opt_path_line(.0, .1, .2))]
+    #[error("{0}{}", with_opt_path_line(.1, .2))]
     CorruptedCache(String, Option<PathBuf>, usize),
     #[error("Failed when reporting diagnostics")]
     Reporter(
