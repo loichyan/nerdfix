@@ -52,8 +52,8 @@ pub enum Command {
         yes: bool,
         /// Replace the prefix of an icon name with another.
         ///
-        /// For example, use `--replace nf-mdi-,nf-md-` to replace all `nf-mdi*` icons
-        /// with the same icons in `nf-md*`.
+        /// For example, use `--replace=nf-mdi,nf-md` to replace all `nf-mdi*`
+        /// icons with the same ones in `nf-md*`.
         #[arg(long, value_name(V_CLASSES))]
         replace: Vec<Replace>,
     },
