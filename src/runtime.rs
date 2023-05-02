@@ -106,19 +106,19 @@ impl Runtime {
                             eprintln!("{}", serde_json::to_string(&diag).unwrap());
                         }
                     }
-                    // Autofix use history.
-                    if let Some(&last) = context.history.get(&icon.codepoint) {
-                        cprintln!("# Auto fix it using last input '{}'".green, last);
-                        ch = last;
-                    // Autofix use replacing.
-                    } else if let Some(new) = self.try_replace(context, icon) {
-                        cprintln!("# Auto replace it with '{}'".green, new);
-                        ch = new;
-                    } else {
+                    if does_fix {
+                        // Push all non-patched content.
+                        let res = result.get_or_insert_with(|| content[..start].to_owned());
+                        // Autofix use history.
+                        if let Some(&last) = context.history.get(&icon.codepoint) {
+                            cprintln!("# Auto fix it using last input '{}'".green, last);
+                            ch = last;
+                        // Autofix use replacing.
+                        } else if let Some(new) = self.try_replace(context, icon) {
+                            cprintln!("# Auto replace it with '{}'".green, new);
+                            ch = new;
                         // Input a new icon
-                        if does_fix {
-                            // Push all non-patched content.
-                            let res = result.get_or_insert_with(|| content[..start].to_owned());
+                        } else {
                             match self.prompt_input_icon(Some(candidates.get()?)) {
                                 Ok(Some(new)) => {
                                     context.history.insert(icon.codepoint, new);
