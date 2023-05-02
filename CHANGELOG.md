@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.2.2 (2023-05-02)
+
+### Fix
+
+- **fix**: patched content should be created in autofix
+- **prompt**: keyboard hints should follow the same style
+- **error**: `Error` should display brief message
+
+### Refactor
+
+- **cli**: show more metadata
+- **error**: make path optional
+- **error**: derive `From` for source errors
+
 ## v0.2.1 (2023-04-11)
 
 ### Feat
