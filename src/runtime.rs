@@ -18,6 +18,7 @@ use once_cell::unsync::OnceCell;
 use serde::Serialize;
 use std::{
     collections::HashMap,
+    io::Write,
     path::{Path, PathBuf},
     rc::Rc,
 };
@@ -103,7 +104,12 @@ impl Runtime {
                                     codepoint: icon.codepoint.into(),
                                 },
                             };
-                            eprintln!("{}", serde_json::to_string(&diag).unwrap());
+                            writeln!(
+                                &mut context.writer,
+                                "{}",
+                                serde_json::to_string(&diag).unwrap()
+                            )
+                            .context(error::Io(error::Stdio))?;
                         }
                     }
                     if does_fix {
@@ -343,7 +349,7 @@ impl Default for CheckerContext {
     fn default() -> Self {
         Self {
             files: SimpleFiles::new(),
-            writer: StandardStream::stderr(term::termcolor::ColorChoice::Always),
+            writer: StandardStream::stdout(term::termcolor::ColorChoice::Always),
             config: term::Config::default(),
             history: HashMap::default(),
             replace: Vec::default(),

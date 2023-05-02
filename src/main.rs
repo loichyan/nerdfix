@@ -29,6 +29,7 @@ fn main_impl() -> error::Result<()> {
         _ => Level::TRACE,
     };
     let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .with_writer(std::io::stderr)
         .with_max_level(lv)
         .without_time()
         .finish();

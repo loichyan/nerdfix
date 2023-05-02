@@ -1,28 +1,36 @@
+use derive_more::{Display, From};
 use std::path::{Path, PathBuf};
 use thisctx::WithContext;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-fn with_opt_path(path: &Option<PathBuf>) -> String {
-    path.as_deref()
-        .map(|p| format!(" at '{}'", p.display()))
-        .unwrap_or_default()
+pub(crate) use IoSource::{None as IoNone, Stdio};
+
+#[derive(Debug, Display, From)]
+pub enum IoSource {
+    #[from]
+    #[display(fmt = "{}", "_0.display()")]
+    Path(PathBuf),
+    #[display(fmt = "<STDIO>")]
+    Stdio,
+    #[display(fmt = "<NONE>")]
+    None,
 }
 
-fn with_opt_path_line(path: &Option<PathBuf>, line: &usize) -> String {
-    path.as_deref()
-        .map(|p| format!(" at '{}:{line}'", p.display()))
-        .unwrap_or_else(|| format!(" at line {line}"))
+impl From<&Path> for IoSource {
+    fn from(value: &Path) -> Self {
+        value.to_owned().into()
+    }
 }
 
 #[derive(Debug, Error, WithContext)]
 #[thisctx(pub(crate))]
 pub enum Error {
-    #[error("Io failed{}", with_opt_path(.1))]
-    Io(#[source] std::io::Error, Option<PathBuf>),
-    #[error("{0}{}", with_opt_path_line(.1, .2))]
-    CorruptedCache(String, Option<PathBuf>, usize),
+    #[error("Io failed at {1}")]
+    Io(#[source] std::io::Error, IoSource),
+    #[error("{0} at {1}:{2}")]
+    CorruptedCache(String, IoSource, usize),
     #[error("Failed when reporting diagnostics")]
     Reporter(
         #[from]
@@ -47,8 +55,8 @@ pub enum Error {
 impl<T> Result<T> {
     fn with_path(self, path: &Path) -> Self {
         self.map_err(|e| match e {
-            Error::Io(e, None) => Error::Io(e, Some(path.to_owned())),
-            Error::CorruptedCache(e, None, i) => Error::CorruptedCache(e, Some(path.to_owned()), i),
+            Error::Io(e, IoNone) => Error::Io(e, path.into()),
+            Error::CorruptedCache(e, IoNone, i) => Error::CorruptedCache(e, path.into(), i),
             _ => e,
         })
     }

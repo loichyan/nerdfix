@@ -29,13 +29,13 @@ pub fn parse(s: &str) -> error::Result<Vec<Icon>> {
             for (i, line) in lines {
                 let CachedIcon(icon) = line
                     .parse()
-                    .map_err(|e| error::CorruptedCache(e, None, i + 1).build())?;
+                    .map_err(|e| error::CorruptedCache(e, error::IoNone, i + 1).build())?;
                 icons.push(icon);
             }
             Ok(icons)
         }
         Some(Version::Undefined) => {
-            Err(error::CorruptedCache("Undefined version", None, 1usize).build())
+            Err(error::CorruptedCache("Undefined version", error::IoNone, 1usize).build())
         }
         None => {
             let Some(start) = s.find('<') else { return Ok(vec![]) };
