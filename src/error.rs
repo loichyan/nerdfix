@@ -18,6 +18,12 @@ pub enum IoSource {
     None,
 }
 
+impl From<&PathBuf> for IoSource {
+    fn from(value: &PathBuf) -> Self {
+        value.to_owned().into()
+    }
+}
+
 impl From<&Path> for IoSource {
     fn from(value: &Path) -> Self {
         value.to_owned().into()
