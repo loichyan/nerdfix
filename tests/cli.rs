@@ -4,7 +4,7 @@ use std::{path::Path, process::Command};
 
 fn cmp_or_override(name: &str) -> impl '_ + Predicate<[u8]> {
     predicate::function(move |content| {
-        let path = format!("tests/cli/{name}.stderr");
+        let path = format!("tests/cli/{name}.stdout");
         let path = Path::new(&path);
         let content = strip_ansi_escapes::strip(content).unwrap();
         if path.exists() {
@@ -25,7 +25,7 @@ fn check() {
         .arg("tests/test-data.txt")
         .assert()
         .success()
-        .stderr(cmp_or_override("check"));
+        .stdout(cmp_or_override("check"));
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn check_with_input() {
         .arg("tests/test-data.txt")
         .assert()
         .success()
-        .stderr(cmp_or_override("check_with_input"));
+        .stdout(cmp_or_override("check_with_input"));
 }
 
 #[test]
@@ -51,5 +51,5 @@ fn check_json() {
         .arg("tests/test-data.txt")
         .assert()
         .success()
-        .stderr(cmp_or_override("check_json"));
+        .stdout(cmp_or_override("check_json"));
 }
