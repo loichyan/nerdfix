@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.2.3 (2023-05-03)
+
+### Fix
+
+- **stdio**: logs and diagnostics should be written to different streams
+
+### Refactor
+
+- `error::Io` can be directly constructed with `&Path`
+
 ## v0.2.2 (2023-05-02)
 
 ### Fix
