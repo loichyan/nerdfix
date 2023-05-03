@@ -33,6 +33,20 @@ overwrite it with the latest one using `nerdfix -i /path/to/your/file` (follow
 [this link](https://github.com/ryanoasis/nerd-fonts/blob/gh-pages/_posts/2017-01-04-icon-cheat-sheet.md)
 to get the latest file).
 
+### Install from source
+
+You can build and install from the source code with `cargo`:
+
+```sh
+cargo install --git https://github.com/loichyan/nerdfix.git
+```
+
+Or with `nix`:
+
+```sh
+nix run github:loichyan/nerdfix
+```
+
 ## 📋 Note
 
 Please make sure you're using Nerd Fonts after v2.3.3, otherwise the replaced
