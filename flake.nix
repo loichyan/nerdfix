@@ -12,10 +12,15 @@
     let
       mkPkgs = pkgs:
         rec {
-          rustToolchain = (with pkgs.fenix; combine [
-            stable.defaultToolchain
-            stable.rust-src
-          ]);
+          rustToolchain = (
+            with pkgs.fenix;
+            with stable;
+            combine [
+              defaultToolchain
+              rust-src
+              rust-analyzer
+            ]
+          );
           rustPlatform = (pkgs.makeRustPlatform {
             cargo = rustToolchain;
             rustc = rustToolchain;
