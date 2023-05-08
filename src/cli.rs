@@ -47,9 +47,15 @@ pub enum Command {
         /// Path(s) of files to check.
         #[arg(value_name(V_PATH))]
         source: Vec<PathBuf>,
-        /// Auto-confirm interactive prompts.
+        /// Deprecated. Use '-w/--write' instead.
         #[arg(short, long)]
         yes: bool,
+        /// Write contents without confirmation.
+        #[arg(short, long)]
+        write: bool,
+        /// Select the first one for all suggestions.
+        #[arg(long)]
+        select_first: bool,
         /// Replace the prefix of an icon name with another.
         ///
         /// For example, use `--replace=nf-mdi,nf-md` to replace all `nf-mdi*`
