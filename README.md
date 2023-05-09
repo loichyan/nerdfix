@@ -56,7 +56,7 @@ recommended to notify this in updates.
 ## 🔍 Usage
 
 The `check` command checks input files and reports obsolete icons with some
-suggestions that you could replace them with.
+suggestions (sorted by similarity) that you could replace them with.
 
 ```sh
 nerdfix check test/test-data.txt
@@ -125,7 +125,7 @@ search.
 
 `nerdfix` provides some features to automatically patch obsolete icons:
 
-- The last input is picked if an icon appears twice.
+- The last user input is picked if an icon appears twice.
 - Use `fix --replace FROM,TO` to replace the prefix of an icon name with
   another, e.g. `nf-mdi-tab` is replaced with `nf-md-tab` when
   `--replace nf-mdi-,nf-md-` is specified.

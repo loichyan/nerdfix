@@ -23,7 +23,7 @@ use std::{
     rc::Rc,
 };
 use thisctx::{IntoError, WithContext};
-use tracing::warn;
+use tracing::error;
 
 const ARITY: usize = 3;
 const PAD_LEN: usize = 2;
@@ -66,77 +66,84 @@ impl Runtime {
         let file_id = context.files.add(path.display().to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
         for (start, mut ch) in content.char_indices() {
-            if let Some(&icon) = self.index().get(&ch) {
-                let icon = &self.icons[icon];
-                if icon.obsolete {
-                    let mut end = start + 1;
-                    while !content.is_char_boundary(end) {
-                        end += 1;
+            if let Some(icon) = self
+                .index()
+                .get(&ch)
+                .map(|&i| &self.icons[i])
+                .filter(|icon| icon.obsolete)
+            {
+                let mut end = start + 1;
+                while !content.is_char_boundary(end) {
+                    end += 1;
+                }
+                let candidates = TryLazy::new(|| self.candidates(icon));
+                match context.format {
+                    OutputFormat::Console => {
+                        let diag = Diagnostic::new(Severity::Info.into())
+                            .with_message(format!(
+                                "Found obsolete icon U+{:X}",
+                                icon.codepoint as u32
+                            ))
+                            .with_labels(vec![Label::primary(file_id, start..end).with_message(
+                                format!("Icon '{}' is marked as obsolete", icon.name),
+                            )])
+                            .with_notes(self.diagnostic_notes(candidates.get()?)?);
+                        term::emit(&mut context.writer, &context.config, &context.files, &diag)?;
                     }
-                    let candidates = TryLazy::new(|| self.candidates(icon));
-                    match context.format {
-                        OutputFormat::Console => {
-                            let diag = Diagnostic::new(Severity::Info.into())
-                                .with_message(format!(
-                                    "Found obsolete icon U+{:X}",
-                                    icon.codepoint as u32
-                                ))
-                                .with_labels(vec![Label::primary(file_id, start..end)
-                                    .with_message(format!(
-                                        "Icon '{}' is marked as obsolete",
-                                        icon.name
-                                    ))])
-                                .with_notes(self.diagnostic_notes(candidates.get()?)?);
-                            term::emit(
-                                &mut context.writer,
-                                &context.config,
-                                &context.files,
-                                &diag,
-                            )?;
-                        }
-                        OutputFormat::Json => {
-                            let diag = DiagOutput {
-                                severity: Severity::Info,
-                                path: path.to_owned(),
-                                ty: DiagType::Obsolete {
-                                    span: (start, end),
-                                    name: icon.name.clone(),
-                                    codepoint: icon.codepoint.into(),
-                                },
-                            };
-                            writeln!(
-                                &mut context.writer,
-                                "{}",
-                                serde_json::to_string(&diag).unwrap()
-                            )
-                            .context(error::Io(error::Stdio))?;
-                        }
+                    OutputFormat::Json => {
+                        let diag = DiagOutput {
+                            severity: Severity::Info,
+                            path: path.to_owned(),
+                            ty: DiagType::Obsolete {
+                                span: (start, end),
+                                name: icon.name.clone(),
+                                codepoint: icon.codepoint.into(),
+                            },
+                        };
+                        writeln!(
+                            &mut context.writer,
+                            "{}",
+                            serde_json::to_string(&diag).unwrap()
+                        )
+                        .context(error::Io(error::Stdio))?;
                     }
-                    if does_fix {
-                        // Push all non-patched content.
-                        let res = result.get_or_insert_with(|| content[..start].to_owned());
-                        // Autofix use history.
-                        if let Some(&last) = context.history.get(&icon.codepoint) {
-                            cprintln!("# Auto fix it using last input '{}'".green, last);
-                            ch = last;
-                        // Autofix use replacing.
-                        } else if let Some(new) = self.try_replace(context, icon) {
-                            cprintln!("# Auto replace it with '{}'".green, new);
-                            ch = new;
-                        // Input a new icon
+                }
+                if does_fix {
+                    // Push all non-patched content.
+                    let res = result.get_or_insert_with(|| content[..start].to_owned());
+                    // Autofix use history.
+                    if let Some(&last) = context.history.get(&icon.codepoint) {
+                        cprintln!("# Auto fix it using last input '{}'".green, last);
+                        ch = last;
+                    // Autofix use replacing.
+                    } else if let Some(new) = self.try_replace(context, icon) {
+                        cprintln!("# Auto replace it with '{}'".green, new);
+                        ch = new;
+                    // Select the first candidate.
+                    } else if context.select_first {
+                        let candidates = candidates.get()?;
+                        if let Some(&first) = candidates.first() {
+                            cprintln!("# Select the first icon '{}'".green, first.codepoint);
+                            ch = first.codepoint;
                         } else {
-                            match self.prompt_input_icon(Some(candidates.get()?)) {
-                                Ok(Some(new)) => {
-                                    context.history.insert(icon.codepoint, new);
-                                    ch = new;
-                                }
-                                Ok(None) => (),
-                                Err(error::Error::Interrupted) => {
-                                    res.push_str(&content[start..]);
-                                    return Ok(result);
-                                }
-                                Err(e) => return Err(e),
+                            error!(
+                                "Cannot find a similar icon for '{} {}'",
+                                icon.codepoint, icon.name
+                            );
+                        }
+                    // Input a new icon
+                    } else {
+                        match self.prompt_input_icon(Some(candidates.get()?)) {
+                            Ok(Some(new)) => {
+                                context.history.insert(icon.codepoint, new);
+                                ch = new;
                             }
+                            Ok(None) => (),
+                            Err(error::Error::Interrupted) => {
+                                res.push_str(&content[start..]);
+                                return Ok(result);
+                            }
+                            Err(e) => return Err(e),
                         }
                     }
                 }
@@ -153,10 +160,7 @@ impl Runtime {
     fn try_replace(&self, ctx: &CheckerContext, icon: &Icon) -> Option<char> {
         for rep in ctx.replace.iter() {
             let Some(name) = icon.name.strip_prefix(&rep.from) else { continue };
-            let Some(new_icon) = self.icons.get(&format!("{}{name}", rep.to)) else {
-                warn!("{} cannot be replaced with '{}*'", icon.name, rep.to);
-                continue;
-            };
+            let Some(new_icon) = self.icons.get(&format!("{}{name}", rep.to)) else { continue };
             return Some(new_icon.codepoint);
         }
         None
@@ -341,8 +345,9 @@ pub struct CheckerContext {
     pub config: term::Config,
     pub history: HashMap<char, char>,
     pub replace: Vec<Replace>,
-    pub yes: bool,
     pub format: OutputFormat,
+    pub write: bool,
+    pub select_first: bool,
 }
 
 impl Default for CheckerContext {
@@ -353,8 +358,9 @@ impl Default for CheckerContext {
             config: term::Config::default(),
             history: HashMap::default(),
             replace: Vec::default(),
-            yes: false,
             format: OutputFormat::default(),
+            write: false,
+            select_first: false,
         }
     }
 }

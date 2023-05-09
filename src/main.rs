@@ -15,7 +15,7 @@ use cli::Command;
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
-use tracing::{error, Level};
+use tracing::{error, warn, Level};
 
 static CACHED: &str = include_str!("./cached.txt");
 
@@ -58,23 +58,29 @@ fn main_impl() -> error::Result<()> {
         Command::Fix {
             source,
             yes,
+            write,
+            select_first,
             replace,
         } => {
+            if yes {
+                warn!("'-y/--yes' is deprecated, use '-w/--write' instead");
+            }
             let mut context = CheckerContext {
                 replace,
-                yes,
+                write,
+                select_first,
                 ..Default::default()
             };
             for path in source.iter() {
                 log_or_break!((|| {
                     if let Some(patched) = rt.check(&mut context, path, true)? {
-                        if !context.yes {
+                        if !context.write {
                             match prompt::prompt_yes_or_no(
                                 "Are your sure to write the patched content?",
                                 None,
                             )? {
                                 YesOrNo::No => return Ok(()),
-                                YesOrNo::AllYes => context.yes = true,
+                                YesOrNo::AllYes => context.write = true,
                                 _ => {}
                             }
                         }
