@@ -53,7 +53,7 @@ pub enum Command {
         /// Write contents without confirmation.
         #[arg(short, long)]
         write: bool,
-        /// Select the first one for all suggestions.
+        /// Select the first (and most similar) one for all suggestions.
         #[arg(long)]
         select_first: bool,
         /// Replace the prefix of an icon name with another.
