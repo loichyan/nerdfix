@@ -1,9 +1,9 @@
 use crate::{
     autocomplete::Autocompleter,
     cli::{OutputFormat, Replace, UserInput},
-    error::{self, ResultTExt},
+    error,
     icon::{CachedIcon, Icon},
-    util::{NGramSearcherExt, TryLazy},
+    util::{NGramSearcherExt, ResultExt, TryLazy},
 };
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
@@ -23,7 +23,6 @@ use std::{
     rc::Rc,
 };
 use thisctx::{IntoError, WithContext};
-use tracing::error;
 
 const ARITY: usize = 3;
 const PAD_LEN: usize = 2;

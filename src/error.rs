@@ -62,14 +62,3 @@ pub enum Error {
     #[error(transparent)]
     Any(Box<dyn Send + Sync + std::error::Error>),
 }
-
-#[extend::ext(pub(crate))]
-impl<T> Result<T> {
-    fn with_path(self, path: &Path) -> Self {
-        self.map_err(|e| match e {
-            Error::Io(e, IoNone) => Error::Io(e, path.into()),
-            Error::CorruptedCache(e, IoNone, i) => Error::CorruptedCache(e, path.into(), i),
-            _ => e,
-        })
-    }
-}

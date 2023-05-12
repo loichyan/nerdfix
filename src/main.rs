@@ -17,6 +17,7 @@ use runtime::{CheckerContext, Runtime};
 use std::path::PathBuf;
 use thisctx::WithContext;
 use tracing::{error, warn, Level};
+use util::ResultExt;
 use walkdir::WalkDir;
 
 static CACHED: &str = include_str!("./cached.txt");
@@ -75,7 +76,11 @@ fn main_impl() -> error::Result<()> {
                 ..Default::default()
             };
             for path in walk(source, recursive) {
-                log_or_break!({ rt.check(&mut context, &path?, false) });
+                tryb! {
+                    rt.check(&mut context, &path?, false)
+                }
+                .ignore_interrupted()
+                .log_error();
             }
         }
         Command::Fix {
@@ -96,7 +101,7 @@ fn main_impl() -> error::Result<()> {
                 ..Default::default()
             };
             for path in walk(source, recursive) {
-                log_or_break!({
+                tryb! {
                     let path = path?;
                     let path = &path;
                     if let Some(patched) = rt.check(&mut context, path, true)? {
@@ -113,7 +118,9 @@ fn main_impl() -> error::Result<()> {
                         std::fs::write(path, patched).context(error::Io(path))?;
                     }
                     Ok(())
-                });
+                }
+                .ignore_interrupted()
+                .log_error();
             }
         }
         Command::Search {} => {
@@ -124,7 +131,5 @@ fn main_impl() -> error::Result<()> {
 }
 
 fn main() {
-    if let Err(e) = main_impl() {
-        log_error!(e);
-    }
+    main_impl().log_error();
 }

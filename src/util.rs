@@ -1,6 +1,7 @@
+use crate::error;
 use noodler::NGramSearcher;
 use once_cell::unsync::OnceCell;
-use std::{cell::Cell, fmt, marker::PhantomData};
+use std::{cell::Cell, fmt, marker::PhantomData, path::Path};
 
 #[cfg(test)]
 macro_rules! icon {
@@ -26,25 +27,11 @@ macro_rules! cprintln {
     };
 }
 
-/// Logs an error with its source info.
-macro_rules! log_error {
-    ($e:expr) => {{
-        tracing::error!("{}", $crate::util::ErrorWithSource($e));
-    }};
-}
-
-/// Used in a loop, breaks if interrupted, logs other errors.
-macro_rules! log_or_break {
-    ($try:block) => {{
-        match (|| $try)() {
-            Err(crate::error::Error::Interrupted) => break,
-            Err(e) => {
-                log_error!(e);
-                continue;
-            }
-            Ok(t) => t,
-        }
-    }};
+macro_rules! tryb {
+    ($($stmt:stmt)*) => {
+        #[allow(redundant_semicolons)]
+        (|| -> ::core::result::Result<_, _> { $($stmt)* })()
+    };
 }
 
 #[derive(Debug)]
@@ -92,22 +79,47 @@ impl<T, E, F: FnOnce() -> Result<T, E>> TryLazy<T, E, F> {
     }
 }
 
-pub trait NGramSearcherExt<'i, 'a, T>: Sized {
-    #[doc(hidden)]
-    fn __into(self) -> NGramSearcher<'i, 'a, T>;
-
+#[extend::ext(pub, name = NGramSearcherExt)]
+impl<'i, 'a, T> NGramSearcher<'i, 'a, T> {
     fn exec_sorted_stable(self) -> <Vec<(&'i T, f32)> as IntoIterator>::IntoIter
     where
         T: noodler::Keyed + Ord,
     {
-        let mut matches = self.__into().exec().collect::<Vec<_>>();
+        let mut matches = self.exec().collect::<Vec<_>>();
         matches.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap().then_with(|| a.0.cmp(b.0)));
         matches.into_iter()
     }
 }
 
-impl<'i, 'a, T> NGramSearcherExt<'i, 'a, T> for NGramSearcher<'i, 'a, T> {
-    fn __into(self) -> NGramSearcher<'i, 'a, T> {
-        self
+#[extend::ext(pub(crate), name = ResultExt)]
+impl<T> error::Result<T> {
+    fn with_path(self, path: &Path) -> Self {
+        use error::Error::*;
+
+        self.map_err(|e| match e {
+            Io(e, error::IoNone) => Io(e, path.into()),
+            CorruptedCache(e, error::IoNone, i) => CorruptedCache(e, path.into(), i),
+            _ => e,
+        })
+    }
+
+    fn ignore_interrupted(self) -> error::Result<Option<T>> {
+        use error::Error::*;
+
+        match self {
+            Ok(t) => Ok(Some(t)),
+            Err(Interrupted) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
+    fn log_error(self) -> Option<T> {
+        match self {
+            Ok(t) => Some(t),
+            Err(e) => {
+                tracing::error!("{}", ErrorWithSource(e));
+                None
+            }
+        }
     }
 }
