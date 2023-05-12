@@ -54,9 +54,9 @@ note: Found obsolete icon U+F9E8
    │
    = You could replace it with:
          1. 󰓩 U+F04E9 nf-md-tab
-         2. 󰓫 U+F04EB nf-md-table
-         3. 󰮠 U+F0BA0 nf-md-gitlab
-         4. 󰓶 U+F04F6 nf-md-tablet
+         2.  U+F523 nf-oct-tab
+         3. 󰓫 U+F04EB nf-md-table
+         4. 󰮠 U+F0BA0 nf-md-gitlab
 
 note: Found obsolete icon U+FC0A
    ┌─ tests/test-data.txt:17:27

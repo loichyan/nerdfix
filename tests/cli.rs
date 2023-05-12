@@ -1,19 +1,32 @@
-use assert_cmd::prelude::*;
+use assert_cmd::{assert::Assert, prelude::*};
 use predicates::prelude::*;
-use std::{path::Path, process::Command};
+use std::{
+    env,
+    path::Path,
+    process::{Command, Output},
+};
+
+#[extend::ext]
+impl Command {
+    fn assert_stripped(&mut self) -> Assert {
+        let output = self.unwrap();
+        Assert::new(Output {
+            stdout: strip_ansi_escapes::strip(output.stdout).unwrap(),
+            stderr: strip_ansi_escapes::strip(output.stderr).unwrap(),
+            ..output
+        })
+    }
+}
 
 fn cmp_or_override(name: &str) -> impl '_ + Predicate<[u8]> {
     predicate::function(move |content| {
         let path = format!("tests/cli/{name}.stdout");
         let path = Path::new(&path);
-        let content = strip_ansi_escapes::strip(content).unwrap();
-        if path.exists() {
-            let expected = std::fs::read(path).unwrap();
-            content == expected
-        } else {
+        if matches!(env::var("NERDFIX_TEST").as_deref(), Ok("overwrite")) {
             std::fs::write(path, content).unwrap();
-            true
         }
+        let expected = std::fs::read(path).unwrap_or_default();
+        content == expected
     })
 }
 
@@ -23,7 +36,7 @@ fn check() {
         .unwrap()
         .arg("check")
         .arg("tests/test-data.txt")
-        .assert()
+        .assert_stripped()
         .success()
         .stdout(cmp_or_override("check"));
 }
@@ -36,7 +49,7 @@ fn check_with_input() {
         .arg("tests/test-input.txt")
         .arg("check")
         .arg("tests/test-data.txt")
-        .assert()
+        .assert_stripped()
         .success()
         .stdout(cmp_or_override("check_with_input"));
 }
@@ -49,7 +62,7 @@ fn check_json() {
         .arg("--format")
         .arg("json")
         .arg("tests/test-data.txt")
-        .assert()
+        .assert_stripped()
         .success()
         .stdout(cmp_or_override("check_json"));
 }
