@@ -7,7 +7,8 @@ use std::{path::PathBuf, str::FromStr};
 use thisctx::IntoError;
 
 const V_PATH: &str = "PATH";
-const V_CLASSES: &str = "CLASSES";
+const V_SOURCE: &str = "SOURCE";
+const V_CLASSES: &str = "FROM,TO";
 const V_FORMAT: &str = "FORMAT";
 const CACHE_VERSION: &str = include_str!("cache-version");
 const CLAP_LONG_VERSION: &str =
@@ -47,10 +48,10 @@ pub enum Command {
     },
     /// Fix obsolete icons interactively.
     Fix {
-        /// Deprecated. Use '-w/--write' instead.
+        /// Deprecated. Use `-w/--write` instead.
         #[arg(short, long)]
         yes: bool,
-        /// Write contents without confirmation.
+        /// Write content without confirmation.
         #[arg(short, long)]
         write: bool,
         /// Select the first (and most similar) one for all suggestions.
@@ -65,9 +66,12 @@ pub enum Command {
         /// Recursively traverse all directories.
         #[arg(short, long)]
         recursive: bool,
-        /// Path(s) of files to check.
-        #[arg(value_name(V_PATH))]
-        source: Vec<PathBuf>,
+        /// Path tuple(s) of files to read from and write to.
+        ///
+        /// Each tuple is an input path followed by an optional output path, e.g.
+        /// `/input/as/ouput /read/from:/write/to`.
+        #[arg(value_name(V_SOURCE))]
+        source: Vec<Source>,
     },
     /// Fuzzy search for an icon.
     Search {},
@@ -129,4 +133,17 @@ pub enum OutputFormat {
     #[default]
     #[value(help("Human-readable output format"))]
     Console,
+}
+
+#[derive(Clone, Debug)]
+pub struct Source(pub PathBuf, pub Option<PathBuf>);
+
+impl FromStr for Source {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(s.split_once(':')
+            .map(|(input, output)| Source(input.into(), Some(output.into())))
+            .unwrap_or_else(|| Source(s.into(), None)))
+    }
 }
