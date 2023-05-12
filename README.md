@@ -146,6 +146,13 @@ You can use `check --format json` to get structured output for further use.
 
 ## 💬 FAQ
 
+### How can I find all files that contain obsolete icons?
+
+```sh
+nerdfix check --format=json -r /path/to/root 2>/dev/null |
+  jq -s -r '[.[].path] | sort | unique | .[]'
+```
+
 ### How can I save patched content to a file other than the input? ([#7](https://github.com/loichyan/nerdfix/pull/7))
 
 ```sh
