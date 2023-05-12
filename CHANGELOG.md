@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3.0 (2023-05-12)
+
+### Feat
+
+- **cli**: support optional paths to write content to
+- **cli**: support recursive directories traversal (#6)
+- **cli**: improve prompts auto confirmation (#4)
+
+### Fix
+
+- **parser**: icons with `removed` label should be considered as obsolete
+
+### Refactor
+
+- **util**: replace some macros with ext traits
+
 ## v0.2.3 (2023-05-03)
 
 ### Fix
