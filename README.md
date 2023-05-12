@@ -146,13 +146,13 @@ You can use `check --format json` to get structured output for further use.
 
 ## 💬 FAQ
 
-### How can I save patched content to a file other than the input? (#7)
+### How can I save patched content to a file other than the input? ([#7](https://github.com/loichyan/nerdfix/pull/7))
 
 ```sh
 nerdfix fix /path/to/input:/path/to/output
 ```
 
-### How can I recursively traverse all directories? (#5)
+### How can I recursively traverse all directories? ([#5](https://github.com/loichyan/nerdfix/issues/5))
 
 ```sh
 nerdfix fix --recursive /path/to/root
@@ -160,7 +160,7 @@ nerdfix fix --recursive /path/to/root
 nerdfix fix $(fd -t f . /path/to/root)
 ```
 
-### How can I skip interactive prompts? (#3)
+### How can I skip interactive prompts? ([#3](https://github.com/loichyan/nerdfix/issues/3))
 
 ```sh
 nerdfix fix --write --select-first /path/to/file
