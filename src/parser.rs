@@ -92,7 +92,7 @@ impl<'a> Parser<'a> {
                         .next()?
                         .as_text()
                 })();
-                let obsolete = obsolete == Some("obsolete");
+                let obsolete = matches!(obsolete, Some("obsolete" | "removed"));
                 self.icons.push(Icon {
                     name: name.to_owned(),
                     codepoint,
@@ -126,7 +126,7 @@ mod tests {
     <div class="class-name">nf-mdi-access_point</div><div title="Copy Hex Code to Clipboard" class="codepoint">f501</div>
   </div>
   <div class="column">
-    <span class="corner-red"></span><span class="corner-text">obsolete</span>
+    <span class="corner-red"></span><span class="corner-text">removed</span>
     <div class="nf nf-mdi-access_point_network center"></div>
     <div class="class-name">nf-mdi-access_point_network</div><div title="Copy Hex Code to Clipboard" class="codepoint">f502</div>
   </div>
