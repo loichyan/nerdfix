@@ -11,10 +11,9 @@ mod runtime;
 shadow_rs::shadow!(shadow);
 
 use clap::Parser;
-use cli::Command;
+use cli::{Command, Source};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
-use std::path::PathBuf;
 use thisctx::WithContext;
 use tracing::{error, warn, Level};
 use util::ResultExt;
@@ -23,18 +22,37 @@ use walkdir::WalkDir;
 static CACHED: &str = include_str!("./cached.txt");
 
 fn walk<'a>(
-    paths: impl 'a + IntoIterator<Item = PathBuf>,
+    paths: impl 'a + IntoIterator<Item = Source>,
     recursive: bool,
-) -> impl 'a + Iterator<Item = error::Result<PathBuf>> {
+) -> impl 'a + Iterator<Item = error::Result<Source>> {
     if !recursive {
         Box::new(paths.into_iter().map(Ok)) as Box<dyn Iterator<Item = _>>
     } else {
         Box::new(
             paths
                 .into_iter()
-                .flat_map(WalkDir::new)
-                .map(|entry| Ok(entry?.into_path()))
-                .filter(|p| if let Ok(p) = p { p.is_file() } else { true }),
+                .flat_map(|Source(input, output)| {
+                    if let Some(output) = output {
+                        warn!(
+                            "Output path is ignored if '--recursive': {}",
+                            output.display()
+                        );
+                    }
+
+                    WalkDir::new(input)
+                })
+                .filter_map(|entry| {
+                    tryb! {
+                        let path = entry?.into_path();
+                        if path.is_file() {
+                            Ok(Some(path))
+                        } else {
+                            Ok(None)
+                        }
+                    }
+                    .transpose()
+                })
+                .map(|e| e.map(|path| Source(path, None))),
         )
     }
 }
@@ -75,9 +93,10 @@ fn main_impl() -> error::Result<()> {
                 format,
                 ..Default::default()
             };
-            for path in walk(source, recursive) {
+            for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
                 tryb! {
-                    rt.check(&mut context, &path?, false)
+                    let source = source?;
+                    rt.check(&mut context, &source.0, false)
                 }
                 .ignore_interrupted()
                 .log_error();
@@ -100,11 +119,12 @@ fn main_impl() -> error::Result<()> {
                 select_first,
                 ..Default::default()
             };
-            for path in walk(source, recursive) {
+            for source in walk(source, recursive) {
                 tryb! {
-                    let path = path?;
-                    let path = &path;
-                    if let Some(patched) = rt.check(&mut context, path, true)? {
+                    let source = source?;
+                    let Source(input, output) = &source;
+                    let output = output.as_ref().unwrap_or(input);
+                    if let Some(patched) = rt.check(&mut context, input, true)? {
                         if !context.write {
                             match prompt::prompt_yes_or_no(
                                 "Are your sure to write the patched content?",
@@ -115,7 +135,7 @@ fn main_impl() -> error::Result<()> {
                                 _ => {}
                             }
                         }
-                        std::fs::write(path, patched).context(error::Io(path))?;
+                        std::fs::write(output, patched).context(error::Io(output))?;
                     }
                     Ok(())
                 }
