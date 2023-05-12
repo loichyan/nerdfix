@@ -42,9 +42,9 @@ note: Found obsolete icon U+F7A1
    │
    = You could replace it with:
          1. 󰊢 U+F02A2 nf-md-git
-         2.  U+E65D nf-seti-git
-         3.  U+F1D3 nf-fa-git
-         4.  U+E702 nf-dev-git
+         2.  U+0E65D nf-seti-git
+         3.  U+0F1D3 nf-fa-git
+         4.  U+0E702 nf-dev-git
 
 note: Found obsolete icon U+F9E8
    ┌─ tests/test-data.txt:14:15
@@ -54,7 +54,7 @@ note: Found obsolete icon U+F9E8
    │
    = You could replace it with:
          1. 󰓩 U+F04E9 nf-md-tab
-         2.  U+F523 nf-oct-tab
+         2.  U+0F523 nf-oct-tab
          3. 󰓫 U+F04EB nf-md-table
          4. 󰮠 U+F0BA0 nf-md-gitlab
 

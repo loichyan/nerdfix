@@ -182,7 +182,7 @@ impl Runtime {
             let mut s = String::from("You could replace it with:\n");
             for (i, &candi) in candidates.iter().enumerate() {
                 s.push_str(&format!(
-                    "    {}. {} U+{:X} {}\n",
+                    "    {}. {} U+{:05X} {}\n",
                     i + 1,
                     candi.codepoint,
                     candi.codepoint as u32,
