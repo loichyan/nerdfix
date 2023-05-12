@@ -144,6 +144,28 @@ You can use `check --format json` to get structured output for further use.
 | `name`      | Icon name                                               |
 | `codepoint` | Icon codepoint                                          |
 
+## 💬 FAQ
+
+### How can I save patched content to a file other than the input? (#7)
+
+```sh
+nerdfix fix /path/to/input:/path/to/output
+```
+
+### How can I recursively traverse all directories? (#5)
+
+```sh
+nerdfix fix --recursive /path/to/root
+# Or use fd/find
+nerdfix fix $(fd -t f . /path/to/root)
+```
+
+### How can I skip interactive prompts? (#3)
+
+```sh
+nerdfix fix --write --select-first /path/to/file
+```
+
 ## ⚖️ License
 
 Licensed under either of
