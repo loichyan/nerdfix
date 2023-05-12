@@ -35,8 +35,8 @@ macro_rules! log_error {
 
 /// Used in a loop, breaks if interrupted, logs other errors.
 macro_rules! log_or_break {
-    ($res:expr) => {{
-        match $res {
+    ($try:block) => {{
+        match (|| $try)() {
             Err(crate::error::Error::Interrupted) => break,
             Err(e) => {
                 log_error!(e);

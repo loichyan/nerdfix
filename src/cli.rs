@@ -38,15 +38,15 @@ pub enum Command {
         /// Output format of diagnostics.
         #[arg(long, value_name(V_FORMAT), default_value("console"))]
         format: OutputFormat,
+        /// Recursively traverse all directories.
+        #[arg(short, long)]
+        recursive: bool,
         /// Path(s) of files to check.
         #[arg(value_name(V_PATH))]
         source: Vec<PathBuf>,
     },
     /// Fix obsolete icons interactively.
     Fix {
-        /// Path(s) of files to check.
-        #[arg(value_name(V_PATH))]
-        source: Vec<PathBuf>,
         /// Deprecated. Use '-w/--write' instead.
         #[arg(short, long)]
         yes: bool,
@@ -62,6 +62,12 @@ pub enum Command {
         /// icons with the same ones in `nf-md*`.
         #[arg(long, value_name(V_CLASSES))]
         replace: Vec<Replace>,
+        /// Recursively traverse all directories.
+        #[arg(short, long)]
+        recursive: bool,
+        /// Path(s) of files to check.
+        #[arg(value_name(V_PATH))]
+        source: Vec<PathBuf>,
     },
     /// Fuzzy search for an icon.
     Search {},

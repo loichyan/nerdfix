@@ -35,6 +35,12 @@ impl From<&Path> for IoSource {
 pub enum Error {
     #[error("Io failed at {1}")]
     Io(#[source] std::io::Error, IoSource),
+    #[error("Failed when traversing directories")]
+    Walkdir(
+        #[from]
+        #[source]
+        walkdir::Error,
+    ),
     #[error("{0} at {1}:{2}")]
     CorruptedCache(String, IoSource, usize),
     #[error("Failed when reporting diagnostics")]

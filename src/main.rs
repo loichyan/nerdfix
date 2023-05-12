@@ -14,10 +14,29 @@ use clap::Parser;
 use cli::Command;
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
+use std::path::PathBuf;
 use thisctx::WithContext;
 use tracing::{error, warn, Level};
+use walkdir::WalkDir;
 
 static CACHED: &str = include_str!("./cached.txt");
+
+fn walk<'a>(
+    paths: impl 'a + IntoIterator<Item = PathBuf>,
+    recursive: bool,
+) -> impl 'a + Iterator<Item = error::Result<PathBuf>> {
+    if !recursive {
+        Box::new(paths.into_iter().map(Ok)) as Box<dyn Iterator<Item = _>>
+    } else {
+        Box::new(
+            paths
+                .into_iter()
+                .flat_map(WalkDir::new)
+                .map(|entry| Ok(entry?.into_path()))
+                .filter(|p| if let Ok(p) = p { p.is_file() } else { true }),
+        )
+    }
+}
 
 fn main_impl() -> error::Result<()> {
     let args = cli::Cli::parse();
@@ -46,21 +65,26 @@ fn main_impl() -> error::Result<()> {
     let rt = rt.build();
     match args.cmd {
         Command::Cache { output } => rt.save_cache(&output)?,
-        Command::Check { source, format } => {
+        Command::Check {
+            format,
+            source,
+            recursive,
+        } => {
             let mut context = CheckerContext {
                 format,
                 ..Default::default()
             };
-            for path in source.iter() {
-                log_or_break!(rt.check(&mut context, path, false));
+            for path in walk(source, recursive) {
+                log_or_break!({ rt.check(&mut context, &path?, false) });
             }
         }
         Command::Fix {
-            source,
             yes,
             write,
             select_first,
             replace,
+            recursive,
+            source,
         } => {
             if yes {
                 warn!("'-y/--yes' is deprecated, use '-w/--write' instead");
@@ -71,8 +95,10 @@ fn main_impl() -> error::Result<()> {
                 select_first,
                 ..Default::default()
             };
-            for path in source.iter() {
-                log_or_break!((|| {
+            for path in walk(source, recursive) {
+                log_or_break!({
+                    let path = path?;
+                    let path = &path;
                     if let Some(patched) = rt.check(&mut context, path, true)? {
                         if !context.write {
                             match prompt::prompt_yes_or_no(
@@ -87,7 +113,7 @@ fn main_impl() -> error::Result<()> {
                         std::fs::write(path, patched).context(error::Io(path))?;
                     }
                     Ok(())
-                })());
+                });
             }
         }
         Command::Search {} => {
