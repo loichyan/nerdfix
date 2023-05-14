@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.1 (2023-05-15)
+
+### Fix
+
+- **cli**: pad output codepoints
+
 ## v0.3.0 (2023-05-12)
 
 ### Feat
