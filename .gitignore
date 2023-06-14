@@ -1,9 +1,32 @@
-# Rust
-/target
+## File system
+.DS_Store
+desktop.ini
 
-# Env files
+## Editor
+*.iml
+*.swo
+*.swp
+.cproject
+.favorites.json
+.idea
+.project
+.settings
+.vs
+.vscode
+Session.vim
+
+## Evn files
 .direnv
 .envrc
 
-# Nix
-result
+## Logs
+*.log
+
+## Misc
+foo.*
+
+## Rust
+/target
+
+## Nix
+/result
