@@ -3,6 +3,7 @@
 
 # Env files
 .direnv
+.envrc
 
 # Nix
 result
