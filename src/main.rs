@@ -19,7 +19,7 @@ use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
 
-static CACHED: &str = include_str!("./cached.txt");
+static CACHED: &str = include_str!("./cached.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = Source>,
@@ -34,6 +34,7 @@ fn walk<'a>(
                 .flat_map(|Source(input, output)| {
                     if let Some(output) = output {
                         warn!(
+                            // TODO: replace 'if' with 'when'
                             "Output path is ignored if '--recursive': {}",
                             output.display()
                         );
@@ -76,7 +77,7 @@ fn main_impl() -> error::Result<()> {
 
     let mut rt = Runtime::builder();
     if args.input.is_empty() {
-        rt.load_cache(CACHED);
+        rt.load_cache(CACHED).unwrap();
     } else {
         for path in args.input.iter() {
             rt.load_input(path)?;

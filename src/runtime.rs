@@ -2,7 +2,7 @@ use crate::{
     autocomplete::Autocompleter,
     cli::{OutputFormat, Replace, UserInput},
     error,
-    icon::{CachedIcon, Icon},
+    icon::{Cache, Icon},
     util::{NGramSearcherExt, TryLazy},
 };
 use codespan_reporting::{
@@ -47,11 +47,11 @@ impl Runtime {
 
     pub fn save_cache(&self, path: &Path) -> error::Result<()> {
         info!("Save cache to '{}'", path.display());
-        let mut content = String::from("nerdfix v1\n");
-        for icon in self.icons.values() {
-            let icon = CachedIcon(icon);
-            content.push_str(&format!("{icon}\n"));
-        }
+        let cache = Cache {
+            version: crate::icon::Version::V1,
+            icons: self.icons.values().cloned().collect(),
+        };
+        let content = serde_json::to_string(&cache).unwrap();
         std::fs::write(path, content)?;
         Ok(())
     }
@@ -314,17 +314,15 @@ impl RuntimeBuilder {
     pub fn load_input(&mut self, path: &Path) -> error::Result<()> {
         info!("Load input from '{}'", path.display());
         let content = std::fs::read_to_string(path)?;
-        let icons = crate::parser::parse(&content)?;
-        for icon in icons {
-            self.add_icon(icon);
-        }
+        self.load_cache(&content)?;
         Ok(())
     }
 
-    pub fn load_cache(&mut self, cached: &str) {
-        for icon in crate::parser::parse(cached).unwrap() {
+    pub fn load_cache(&mut self, cached: &str) -> error::Result<()> {
+        for icon in crate::parser::parse(cached)? {
             self.add_icon(icon);
         }
+        Ok(())
     }
 
     pub fn build(self) -> Runtime {

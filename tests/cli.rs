@@ -46,7 +46,7 @@ fn check_with_input() {
     Command::cargo_bin("nerdfix")
         .unwrap()
         .arg("-i")
-        .arg("tests/test-input.txt")
+        .arg("tests/test-input.json")
         .arg("check")
         .arg("tests/test-data.txt")
         .assert_stripped()
