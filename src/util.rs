@@ -28,10 +28,10 @@ macro_rules! cprintln {
 }
 
 macro_rules! tryb {
-    ($($stmt:stmt)*) => {
+    ($($stmt:stmt)*) => {{
         #[allow(redundant_semicolons)]
-        (|| -> ::core::result::Result<_, _> { $($stmt)* })()
-    };
+        (|| { $($stmt)* })()
+    }};
 }
 
 #[derive(Debug)]

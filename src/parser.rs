@@ -12,7 +12,7 @@ pub fn parse(s: &str) -> error::Result<Vec<Icon>> {
         return Ok(Vec::default());
     }
     let mut lines = s.lines().enumerate();
-    let version = (|| {
+    let version = tryb! {
         let (_, first_line) = lines.next()?;
         let (brand, version) = first_line.split_once(' ')?;
         if brand != "nerdfix" {
@@ -22,7 +22,7 @@ pub fn parse(s: &str) -> error::Result<Vec<Icon>> {
             "v1" => Version::V1,
             _ => Version::Undefined,
         })
-    })();
+    };
     match version {
         Some(Version::V1) => {
             let mut icons = Vec::default();
@@ -75,7 +75,7 @@ impl<'a> Parser<'a> {
             .document
             .find(Attr("id", "glyphCheatSheet").child(Element))
         {
-            (|| {
+            tryb! {
                 let name = node
                     .find(Class("class-name").child(Text))
                     .next()?
@@ -87,11 +87,11 @@ impl<'a> Parser<'a> {
                     .as_text()?;
                 let codepoint = u32::from_str_radix(codepoint, 16).ok()?;
                 let codepoint = char::from_u32(codepoint)?;
-                let obsolete = (|| {
+                let obsolete = tryb! {
                     node.find(Class("corner-text").child(Text))
                         .next()?
                         .as_text()
-                })();
+                };
                 let obsolete = matches!(obsolete, Some("obsolete" | "removed"));
                 self.icons.push(Icon {
                     name: name.to_owned(),
@@ -99,7 +99,7 @@ impl<'a> Parser<'a> {
                     obsolete,
                 });
                 Some(())
-            })();
+            };
         }
         Ok(())
     }
