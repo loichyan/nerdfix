@@ -1,3 +1,0 @@
-nerdfix v1
-md-file_document f0219
-mdi-file_document_box f719 obsolete

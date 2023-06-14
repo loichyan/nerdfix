@@ -2,54 +2,23 @@
 
 use crate::{
     error,
-    icon::{CachedIcon, Icon},
+    icon::{Cache, Icon},
 };
 use select::document::Document;
 use thisctx::IntoError;
 
 pub fn parse(s: &str) -> error::Result<Vec<Icon>> {
-    if s.is_empty() {
-        return Ok(Vec::default());
+    if s.trim_start().starts_with('{') {
+        Ok(serde_json::from_str::<Cache>(s)?.icons)
+    } else if let Some(start) = s.find('<') {
+        // TODO: support new cheat-sheet format
+        let s = &s[start..];
+        let mut parser = Parser::new(s);
+        parser.parse()?;
+        Ok(parser.icons)
+    } else {
+        error::InvalidCheatSheet.fail()
     }
-    let mut lines = s.lines().enumerate();
-    let version = tryb!({
-        let (_, first_line) = lines.next()?;
-        let (brand, version) = first_line.split_once(' ')?;
-        if brand != "nerdfix" {
-            return None;
-        }
-        Some(match version {
-            "v1" => Version::V1,
-            _ => Version::Undefined,
-        })
-    });
-    match version {
-        Some(Version::V1) => {
-            let mut icons = Vec::default();
-            for (i, line) in lines {
-                let CachedIcon(icon) = line
-                    .parse()
-                    .map_err(|e| error::CorruptedCache(e, i + 1).build())?;
-                icons.push(icon);
-            }
-            Ok(icons)
-        }
-        Some(Version::Undefined) => Err(error::CorruptedCache("Undefined version", 1usize).build()),
-        None => {
-            let Some(start) = s.find('<') else { return Ok(vec![]) };
-            // Skips yaml metadata.
-            let s = &s[start..];
-            let mut parser = Parser::new(s);
-            parser.parse()?;
-            Ok(parser.icons)
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum Version {
-    Undefined,
-    V1,
 }
 
 struct Parser<'a> {

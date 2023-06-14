@@ -1,11 +1,14 @@
 //! Nerd font icons infomation.
 
-use std::{borrow::Borrow, fmt, str::FromStr};
+use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
 pub struct Icon {
     pub name: String,
+    #[serde(deserialize_with = "codepoint_de")]
+    #[serde(serialize_with = "codepoint_se")]
     pub codepoint: char,
+    #[serde(default)]
     pub obsolete: bool,
 }
 
@@ -21,64 +24,45 @@ impl Ord for Icon {
     }
 }
 
-pub struct CachedIcon<T = Icon>(pub T);
-
-impl FromStr for CachedIcon {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut splited = s.split_ascii_whitespace();
-        let name = splited.next().ok_or("Miss field 'name'")?.to_owned();
-        let codepoint = splited.next().ok_or("Miss field 'codepoint'")?;
-        let codepoint =
-            u32::from_str_radix(codepoint, 16).map_err(|_| "Invalid field 'codepoint'")?;
-        let codepoint = char::from_u32(codepoint).ok_or("Invalid field 'codepoint'")?;
-        let obsolete = match splited.next() {
-            Some(s) if s == "obsolete" => true,
-            Some(_) => return Err("Invalid field 'obsolete'"),
-            None => false,
-        };
-        Ok(Self(Icon {
-            name,
-            codepoint,
-            obsolete,
-        }))
-    }
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
+pub struct Cache {
+    // Reserved for future compatibility
+    pub version: Version,
+    pub icons: Vec<Icon>,
 }
 
-impl<T: Borrow<Icon>> fmt::Display for CachedIcon<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let icon: &Icon = self.0.borrow();
-        write!(f, "{} {:x}", icon.name, icon.codepoint as u32)?;
-        if icon.obsolete {
-            write!(f, " obsolete")?;
+#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Version {
+    V1,
+}
+
+fn codepoint_de<'de, D>(deserializer: D) -> Result<char, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct CodepointVisitor;
+    impl<'de> Visitor<'de> for CodepointVisitor {
+        type Value = char;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            f.write_str("string")
         }
-        Ok(())
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            let v = u32::from_str_radix(v, 16).map_err(|_| E::custom("Invalid hex number"))?;
+            char::from_u32(v).ok_or_else(|| E::custom("Invalid UTF-8 character"))
+        }
     }
+    deserializer.deserialize_str(CodepointVisitor)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn icon_to_str() {
-        assert_eq!(CachedIcon(icon!("test", 0xf500)).to_string(), "test f500",);
-        assert_eq!(
-            CachedIcon(icon!("test", 0xf500, true)).to_string(),
-            "test f500 obsolete",
-        );
-    }
-
-    #[test]
-    fn icon_from_str() {
-        assert_eq!(
-            icon!("test", 0xf500),
-            "test f500".parse::<CachedIcon>().unwrap().0,
-        );
-        assert_eq!(
-            icon!("test", 0xf500, true),
-            "test f500 obsolete".parse::<CachedIcon>().unwrap().0,
-        );
-    }
+fn codepoint_se<S>(t: &char, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(&format!("{:x}", *t as u32))
 }
