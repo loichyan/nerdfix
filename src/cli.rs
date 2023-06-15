@@ -18,9 +18,13 @@ const CLAP_LONG_VERSION: &str =
 #[command(author, version, long_version = CLAP_LONG_VERSION)]
 pub struct Cli {
     /// Path(s) to load the icons cheat sheet or cached content.
-    #[arg(short, long, value_name(V_PATH))]
+    #[arg(short, long, value_name = V_PATH)]
     pub input: Vec<PathBuf>,
-    #[arg(short, long, action = clap::ArgAction::Count)]
+    /// Decrease log level.
+    #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 0)]
+    pub quiet: u8,
+    /// Increase log level.
+    #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
     pub verbose: u8,
     #[command(subcommand)]
     pub cmd: Command,

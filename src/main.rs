@@ -60,10 +60,11 @@ fn walk<'a>(
 fn main_impl() -> error::Result<()> {
     let args = cli::Cli::parse();
 
-    let lv = match args.verbose {
-        0 => Level::WARN,
-        1 => Level::INFO,
-        2 => Level::DEBUG,
+    let lv = match args.verbose - args.quiet {
+        0 => Level::ERROR,
+        1 => Level::WARN,
+        2 => Level::INFO,
+        3 => Level::DEBUG,
         _ => Level::TRACE,
     };
     let subscriber = tracing_subscriber::FmtSubscriber::builder()
