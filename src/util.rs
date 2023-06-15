@@ -1,7 +1,7 @@
 use crate::error;
 use noodler::NGramSearcher;
 use once_cell::unsync::OnceCell;
-use std::{cell::Cell, fmt, marker::PhantomData, path::Path};
+use std::{cell::Cell, fmt, marker::PhantomData};
 
 #[cfg(test)]
 macro_rules! icon {
@@ -93,16 +93,6 @@ impl<'i, 'a, T> NGramSearcher<'i, 'a, T> {
 
 #[extend::ext(pub(crate), name = ResultExt)]
 impl<T> error::Result<T> {
-    fn with_path(self, path: &Path) -> Self {
-        use error::Error::*;
-
-        self.map_err(|e| match e {
-            Io(e, error::IoNone) => Io(e, path.into()),
-            CorruptedCache(e, error::IoNone, i) => CorruptedCache(e, path.into(), i),
-            _ => e,
-        })
-    }
-
     fn ignore_interrupted(self) -> error::Result<Option<T>> {
         use error::Error::*;
 

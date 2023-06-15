@@ -15,7 +15,7 @@ use cli::{Command, Source};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
-use tracing::{error, warn, Level};
+use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
 
@@ -135,7 +135,8 @@ fn main_impl() -> error::Result<()> {
                                 _ => {}
                             }
                         }
-                        std::fs::write(output, patched).context(error::Io(output))?;
+                        info!("Write output to '{}'", output.display());
+                        std::fs::write(output, patched)?;
                     }
                     Ok(())
                 }
