@@ -11,8 +11,8 @@ impl Command {
     fn assert_stripped(&mut self) -> Assert {
         let output = self.unwrap();
         Assert::new(Output {
-            stdout: strip_ansi_escapes::strip(output.stdout).unwrap(),
-            stderr: strip_ansi_escapes::strip(output.stderr).unwrap(),
+            stdout: strip_ansi_escapes::strip(output.stdout),
+            stderr: strip_ansi_escapes::strip(output.stderr),
             ..output
         })
     }

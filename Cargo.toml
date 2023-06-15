@@ -6,7 +6,7 @@ license = "MIT OR Apache-2.0"
 edition = "2021"
 
 [dependencies]
-clap = { version = "4.3", features = ["derive"] }
+clap = { version = "4.4", features = ["derive"] }
 codespan-reporting = "0.11"
 colored = "2.0"
 derive_more = "0.99"
@@ -15,9 +15,8 @@ indexmap = "2.0"
 inquire = "0.6"
 itertools = "0.11"
 noodler = "0.1"
-once_cell = "1.18"
+once_cell = "1.17"
 regex = "1.8"
-select = "0.6"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 shadow-rs = { version = "0.23", default-features = false }
@@ -30,7 +29,7 @@ walkdir = "2.3"
 [dev-dependencies]
 assert_cmd = "2.0"
 predicates = "3.0"
-strip-ansi-escapes = "0.1"
+strip-ansi-escapes = "0.2"
 
 [build-dependencies]
 shadow-rs = { version = "0.23", default-features = false }

@@ -48,7 +48,7 @@ impl Runtime {
     pub fn save_cache(&self, path: &Path) -> error::Result<()> {
         info!("Save cache to '{}'", path.display());
         let cache = Cache {
-            version: crate::icon::Version::V1,
+            metadata: crate::icon::Version::V1,
             icons: self.icons.values().cloned().collect(),
         };
         let content = serde_json::to_string(&cache).unwrap();

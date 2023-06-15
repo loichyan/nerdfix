@@ -18,8 +18,8 @@ pub enum Error {
         #[source]
         walkdir::Error,
     ),
-    #[error("Invalid cheat sheet")]
-    InvalidCheatSheet,
+    #[error("Invalid cheat sheet at line {0}")]
+    InvalidCheatSheet(#[thisctx(no_generic)] usize),
     #[error("Failed to parse json")]
     Json(
         #[from]
@@ -40,6 +40,8 @@ pub enum Error {
     ),
     #[error("Invalid input")]
     InvalidInput,
+    #[error("Invalid codepoint")]
+    InvalidCodepoint,
     #[error("Operation was interrupted by the user")]
     Interrupted,
     #[error(transparent)]

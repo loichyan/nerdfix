@@ -85,6 +85,7 @@ fn main_impl() -> error::Result<()> {
     }
     let rt = rt.build();
     match args.cmd {
+        // TODO: rename to index
         Command::Cache { output } => rt.save_cache(&output)?,
         Command::Check {
             format,

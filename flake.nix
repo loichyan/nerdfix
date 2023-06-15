@@ -17,7 +17,7 @@
         rec {
           rustToolchain = pkgs.fenix.toolchainOf {
             channel = (lib.importTOML ./rust-toolchain).toolchain.channel;
-            sha256 = "sha256-DzNEaW724O8/B8844tt5AVHmSjSQ3cmzlU4BP90oRlY=";
+            sha256 = "sha256-gdYqng0y9iHYzYPAdkC/ka3DRny3La/S5G8ASj0Ayyc=";
           };
           rust = (
             with pkgs.fenix;
