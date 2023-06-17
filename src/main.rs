@@ -77,21 +77,23 @@ fn main_impl() -> error::Result<()> {
 
     let mut rt = Runtime::builder();
     if args.input.is_empty() {
-        rt.load_cache(CACHED).unwrap();
+        rt.load_input(CACHED).unwrap();
     } else {
         for path in args.input.iter() {
-            rt.load_input(path)?;
+            rt.load_input_file(path)?;
         }
     }
-    let rt = rt.build();
+    // TODO: embed substitutions list
+
     match args.cmd {
         // TODO: rename to index
-        Command::Cache { output } => rt.save_cache(&output)?,
+        Command::Cache { output } => rt.build().save_cache(&output)?,
         Command::Check {
             format,
             source,
             recursive,
         } => {
+            let rt = rt.build();
             let mut context = CheckerContext {
                 format,
                 ..Default::default()
@@ -112,10 +114,15 @@ fn main_impl() -> error::Result<()> {
             replace,
             recursive,
             source,
+            substitutions,
         } => {
             if yes {
                 warn!("'-y/--yes' is deprecated, use '-w/--write' instead");
             }
+            for p in substitutions {
+                rt.load_substitutions_file(&p)?;
+            }
+            let rt = rt.build();
             let mut context = CheckerContext {
                 replace,
                 write,
@@ -148,7 +155,7 @@ fn main_impl() -> error::Result<()> {
             }
         }
         Command::Search {} => {
-            rt.prompt_input_icon(None).ok();
+            rt.build().prompt_input_icon(None).ok();
         }
     }
     Ok(())

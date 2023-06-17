@@ -70,6 +70,12 @@ pub enum Command {
         /// Recursively traverse all directories.
         #[arg(short, long)]
         recursive: bool,
+        /// Load predfined substitutions lists used in autofix.
+        ///
+        /// A substitutions list is a json object whose key is icon name and whose
+        /// value is a list of icons used to replace the icon.
+        #[arg(long, value_name(V_PATH))]
+        substitutions: Vec<PathBuf>,
         /// Path tuple(s) of files to read from and write to.
         ///
         /// Each tuple is an input path followed by an optional output path, e.g.
