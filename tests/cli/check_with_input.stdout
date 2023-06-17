@@ -1,18 +1,18 @@
 note: Found obsolete icon U+F719
-  ┌─ tests/test-data.txt:4:29
+  ┌─ tests/test-data.txt:4:26
   │
-4 │ nf-mdi-file_document_box = ""
-  │                             ^ Icon 'nf-mdi-file_document_box' is marked as obsolete
+4 │ mdi-file_document_box = ""
+  │                          ^ Icon 'mdi-file_document_box' is marked as obsolete
   │
   = You could replace it with:
-        1. 󰈙 U+F0219 nf-md-file_document
+        1. 󰈙 U+F0219 md-file_document
 
 note: Found obsolete icon U+F719
-  ┌─ tests/test-data.txt:8:29
+  ┌─ tests/test-data.txt:8:26
   │
-8 │ nf-mdi-file_document_box = ""
-  │                             ^ Icon 'nf-mdi-file_document_box' is marked as obsolete
+8 │ mdi-file_document_box = ""
+  │                          ^ Icon 'mdi-file_document_box' is marked as obsolete
   │
   = You could replace it with:
-        1. 󰈙 U+F0219 nf-md-file_document
+        1. 󰈙 U+F0219 md-file_document
 

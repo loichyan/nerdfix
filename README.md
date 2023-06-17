@@ -11,7 +11,7 @@
 Nerd Fonts is used in many projects for a beautiful UI. It provides more than
 10,000 icons, but some codepoints conflict with other fonts (especially CJK
 fonts). To ensure that the icons remain in the private use area, Nerd Fonts has
-changed the codepoints of some icons in recent releases, for example, `nf-mdi-*`
+changed the codepoints of some icons in recent releases, for example, `mdi-*`
 icons (including over 2,000 icons) are deprecated since
 [v2.3.3](https://github.com/ryanoasis/nerd-fonts/releases/tag/v2.3.3) and will
 be removed in v3.
@@ -68,12 +68,12 @@ You get the output as follows:
 warning: Found obsolete icon U+F752
   ┌─ tests/test-data.txt:1:27
   │
-1 │ nf-mdi-folder_multiple = ""
-  │                           ^ Icon 'nf-mdi-folder_multiple' is marked as obsolete
+1 │ mdi-folder_multiple = ""
+  │                           ^ Icon 'mdi-folder_multiple' is marked as obsolete
   │
   = You could replace it with:
-        1. 󰉓 U+F0253 nf-md-folder_multiple
-        2. 󱏓 U+F13D3 nf-md-folder_star_multiple
+        1. 󰉓 U+F0253 md-folder_multiple
+        2. 󱏓 U+F13D3 md-folder_star_multiple
         ...
 ```
 
@@ -86,12 +86,12 @@ asking the user to input a new icon to replace the obsolete one.
 warning: Found obsolete icon U+F719
   ┌─ tests/test-data.txt:4:29
   │
-4 │ nf-mdi-file_document_box = ""
-  │                             ^ Icon 'nf-mdi-file_document_box' is marked as obsolete
+4 │ mdi-file_document_box = ""
+  │                             ^ Icon 'mdi-file_document_box' is marked as obsolete
   │
   = You could replace it with:
-        1. 󰈙 U+F0219 nf-md-file_document
-        2. 󰷈 U+F0DC8 nf-md-file_document_edit
+        1. 󰈙 U+F0219 md-file_document
+        2. 󰷈 U+F0DC8 md-file_document_edit
         ...
 > Input an icon: 1
 # Your input: 󰈙
@@ -99,12 +99,12 @@ warning: Found obsolete icon U+F719
 
 The prompt accepts several types of input:
 
-| Type              | Example               |
-| ----------------- | --------------------- |
-| Suggestion number | `1`                   |
-| Codepoint         | `U+F0219`             |
-| Icon name         | `nf-md-file_document` |
-| Icon character    | `󰈙`                   |
+| Type              | Example            |
+| ----------------- | ------------------ |
+| Suggestion number | `1`                |
+| Codepoint         | `U+F0219`          |
+| Icon name         | `md-file_document` |
+| Icon character    | `󰈙`                |
 
 ### Fuzzy autocompletion/search
 
@@ -112,9 +112,9 @@ The prompt also provides fuzzy matching suggestions when you type the icon name:
 
 ```text
 > Input an icon: documentmultiple
-  󱔗 nf-md-file_document_multiple
-  󱔘 nf-md-file_document_multiple_outline
-  󰡟 nf-md-comment_multiple
+  󱔗 md-file_document_multiple
+  󱔘 md-file_document_multiple_outline
+  󰡟 md-comment_multiple
   ...
 ```
 
@@ -127,8 +127,8 @@ search.
 
 - The last user input is picked if an icon appears twice.
 - Use `fix --replace FROM,TO` to replace the prefix of an icon name with
-  another, e.g. `nf-mdi-tab` is replaced with `nf-md-tab` when
-  `--replace nf-mdi-,nf-md-` is specified.
+  another, e.g. `mdi-tab` is replaced with `md-tab` when `--replace mdi-,md-` is
+  specified.
 
 ### Structured output
 
