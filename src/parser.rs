@@ -79,6 +79,7 @@ impl<'a> Parser<'a> {
                     .next()?
                     .as_text()?
                     .trim();
+                let name = name.strip_prefix("nf-").unwrap_or(name);
                 let codepoint = node
                     .find(Class("codepoint").child(Text))
                     .next()?
@@ -134,10 +135,10 @@ mod tests {
     fn parser() {
         let icons = super::parse(CHEAT_SHEET).unwrap();
         let expected = vec![
-            icon!("nf-cod-account", 0xeb99),
-            icon!("nf-cod-activate_breakpoints", 0xea97),
-            icon!("nf-mdi-access_point", 0xf501, true),
-            icon!("nf-mdi-access_point_network", 0xf502, true),
+            icon!("cod-account", 0xeb99),
+            icon!("cod-activate_breakpoints", 0xea97),
+            icon!("mdi-access_point", 0xf501, true),
+            icon!("mdi-access_point_network", 0xf502, true),
         ];
         assert_eq!(icons, expected);
     }

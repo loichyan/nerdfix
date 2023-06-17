@@ -63,8 +63,8 @@ pub enum Command {
         select_first: bool,
         /// Replace the prefix of an icon name with another.
         ///
-        /// For example, use `--replace=nf-mdi,nf-md` to replace all `nf-mdi*`
-        /// icons with the same ones in `nf-md*`.
+        /// For example, use `--replace=mdi,md` to replace all `mdi*`
+        /// icons with the same ones in `md*`.
         #[arg(long, value_name(V_CLASSES))]
         replace: Vec<Replace>,
         /// Recursively traverse all directories.

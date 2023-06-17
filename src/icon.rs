@@ -63,25 +63,22 @@ mod tests {
 
     #[test]
     fn icon_to_str() {
+        assert_eq!(CachedIcon(icon!("test", 0xf500)).to_string(), "test f500",);
         assert_eq!(
-            CachedIcon(icon!("nf-test", 0xf500)).to_string(),
-            "nf-test f500",
-        );
-        assert_eq!(
-            CachedIcon(icon!("nf-test", 0xf500, true)).to_string(),
-            "nf-test f500 obsolete",
+            CachedIcon(icon!("test", 0xf500, true)).to_string(),
+            "test f500 obsolete",
         );
     }
 
     #[test]
     fn icon_from_str() {
         assert_eq!(
-            icon!("nf-test", 0xf500),
-            "nf-test f500".parse::<CachedIcon>().unwrap().0,
+            icon!("test", 0xf500),
+            "test f500".parse::<CachedIcon>().unwrap().0,
         );
         assert_eq!(
-            icon!("nf-test", 0xf500, true),
-            "nf-test f500 obsolete".parse::<CachedIcon>().unwrap().0,
+            icon!("test", 0xf500, true),
+            "test f500 obsolete".parse::<CachedIcon>().unwrap().0,
         );
     }
 }
