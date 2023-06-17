@@ -1,48 +1,25 @@
-use derive_more::{Display, From};
-use std::path::{Path, PathBuf};
 use thisctx::WithContext;
 use thiserror::Error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub(crate) use IoSource::{None as IoNone, Stdio};
-
-#[derive(Debug, Display, From)]
-pub enum IoSource {
-    #[from]
-    #[display(fmt = "{}", "_0.display()")]
-    Path(PathBuf),
-    #[display(fmt = "<STDIO>")]
-    Stdio,
-    #[display(fmt = "<NONE>")]
-    None,
-}
-
-impl From<&PathBuf> for IoSource {
-    fn from(value: &PathBuf) -> Self {
-        value.to_owned().into()
-    }
-}
-
-impl From<&Path> for IoSource {
-    fn from(value: &Path) -> Self {
-        value.to_owned().into()
-    }
-}
-
 #[derive(Debug, Error, WithContext)]
 #[thisctx(pub(crate))]
 pub enum Error {
-    #[error("Io failed at {1}")]
-    Io(#[source] std::io::Error, IoSource),
+    #[error("Io failed")]
+    Io(
+        #[from]
+        #[source]
+        std::io::Error,
+    ),
     #[error("Failed when traversing directories")]
     Walkdir(
         #[from]
         #[source]
         walkdir::Error,
     ),
-    #[error("{0} at {1}:{2}")]
-    CorruptedCache(String, IoSource, usize),
+    #[error("{0} at line {1}")]
+    CorruptedCache(String, #[thisctx(no_generic)] usize),
     #[error("Failed when reporting diagnostics")]
     Reporter(
         #[from]

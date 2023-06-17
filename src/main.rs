@@ -15,7 +15,7 @@ use cli::{Command, Source};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
-use tracing::{error, warn, Level};
+use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
 
@@ -60,10 +60,11 @@ fn walk<'a>(
 fn main_impl() -> error::Result<()> {
     let args = cli::Cli::parse();
 
-    let lv = match args.verbose {
-        0 => Level::WARN,
-        1 => Level::INFO,
-        2 => Level::DEBUG,
+    let lv = match args.verbose - args.quiet {
+        0 => Level::ERROR,
+        1 => Level::WARN,
+        2 => Level::INFO,
+        3 => Level::DEBUG,
         _ => Level::TRACE,
     };
     let subscriber = tracing_subscriber::FmtSubscriber::builder()
@@ -135,7 +136,8 @@ fn main_impl() -> error::Result<()> {
                                 _ => {}
                             }
                         }
-                        std::fs::write(output, patched).context(error::Io(output))?;
+                        info!("Write output to '{}'", output.display());
+                        std::fs::write(output, patched)?;
                     }
                     Ok(())
                 }
