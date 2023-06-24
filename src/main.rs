@@ -42,14 +42,14 @@ fn walk<'a>(
                     WalkDir::new(input)
                 })
                 .filter_map(|entry| {
-                    tryb! {
+                    tryb!({
                         let path = entry?.into_path();
                         if path.is_file() {
                             Ok(Some(path))
                         } else {
                             Ok(None)
                         }
-                    }
+                    })
                     .transpose()
                 })
                 .map(|e| e.map(|path| Source(path, None))),
@@ -95,10 +95,10 @@ fn main_impl() -> error::Result<()> {
                 ..Default::default()
             };
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
-                tryb! {
+                tryb!({
                     let source = source?;
                     rt.check(&mut context, &source.0, false)
-                }
+                })
                 .ignore_interrupted()
                 .log_error();
             }
@@ -121,7 +121,7 @@ fn main_impl() -> error::Result<()> {
                 ..Default::default()
             };
             for source in walk(source, recursive) {
-                tryb! {
+                tryb!({
                     let source = source?;
                     let Source(input, output) = &source;
                     let output = output.as_ref().unwrap_or(input);
@@ -140,7 +140,7 @@ fn main_impl() -> error::Result<()> {
                         std::fs::write(output, patched)?;
                     }
                     Ok(())
-                }
+                })
                 .ignore_interrupted()
                 .log_error();
             }

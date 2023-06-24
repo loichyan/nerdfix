@@ -28,10 +28,9 @@ macro_rules! cprintln {
 }
 
 macro_rules! tryb {
-    ($($stmt:stmt)*) => {{
-        #[allow(redundant_semicolons)]
-        (|| { $($stmt)* })()
-    }};
+    ($block:block) => {
+        (|| $block)()
+    };
 }
 
 #[derive(Debug)]
