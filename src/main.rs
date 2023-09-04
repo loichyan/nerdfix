@@ -20,6 +20,7 @@ use util::ResultExt;
 use walkdir::WalkDir;
 
 static INDICES: &str = include_str!("./index.json");
+static SUBSTITUTIONS: &str = include_str!("./substitution.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = Source>,
@@ -83,7 +84,13 @@ fn main_impl() -> error::Result<()> {
             rt.load_input_file(path)?;
         }
     }
-    // TODO: embed substitutions list
+    if args.substitutions.is_empty() {
+        rt.load_substitutions(SUBSTITUTIONS).unwrap();
+    } else {
+        for path in args.input.iter() {
+            rt.load_substitutions_file(path)?;
+        }
+    }
 
     match args.cmd {
         Command::Cache { .. } => warn!("'cache' is deprecated, use 'index' instead"),
@@ -114,13 +121,9 @@ fn main_impl() -> error::Result<()> {
             replace,
             recursive,
             source,
-            substitutions,
         } => {
             if yes {
                 warn!("'-y/--yes' is deprecated, use '-w/--write' instead");
-            }
-            for p in substitutions {
-                rt.load_substitutions_file(&p)?;
             }
             let rt = rt.build();
             let mut context = CheckerContext {

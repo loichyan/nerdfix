@@ -182,6 +182,7 @@ impl Runtime {
     }
 
     fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {
+        // TODO: check substitutions first
         Ok(self
             .corpus()
             .searcher(&icon.name)
