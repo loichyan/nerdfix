@@ -24,8 +24,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Rust toolchain ${{ matrix.cfg.target }}
-        uses: dtolnay/rust-toolchain@stable
+      - name: Rust toolchain cache
+        id: rust-toolchain-cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.rustup
+          key: setup-rust-toolchain-${{ runner.os }}-1.65
+
+      - name: Setup Rust toolchain
+        if: steps.rust-toolchain-cache.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@1.65
         with:
           targets: ${{ matrix.cfg.target }}
 

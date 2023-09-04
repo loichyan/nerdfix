@@ -11,20 +11,24 @@
   outputs = { nixpkgs, flake-utils, fenix, ... }:
     let
       mkPkgs = pkgs:
+        let
+          inherit (pkgs) lib;
+        in
         rec {
-          rustToolchain = (
+          rustToolchain = pkgs.fenix.toolchainOf {
+            channel = (lib.importTOML ./rust-toolchain).toolchain.channel;
+            sha256 = "sha256-DzNEaW724O8/B8844tt5AVHmSjSQ3cmzlU4BP90oRlY=";
+          };
+          rust = (
             with pkgs.fenix;
-            with stable;
+            with rustToolchain;
             combine [
               defaultToolchain
               rust-src
               rust-analyzer
             ]
           );
-          rustPlatform = (pkgs.makeRustPlatform {
-            cargo = rustToolchain;
-            rustc = rustToolchain;
-          });
+          rustPlatform = (pkgs.makeRustPlatform { cargo = rust; rustc = rust; });
           nerdfix =
             rustPlatform.buildRustPackage {
               pname = "nerdfix";
@@ -41,14 +45,12 @@
           inherit system;
           overlays = [ fenix.overlays.default ];
         };
-        inherit (mkPkgs pkgs) rustToolchain nerdfix;
+        inherit (mkPkgs pkgs) rust nerdfix;
       in
       {
         packages.default = nerdfix;
         devShells.default = pkgs.mkShell {
-          nativeBuildInputs = [
-            rustToolchain
-          ];
+          nativeBuildInputs = [ rust ];
         };
       }
     )) // {
