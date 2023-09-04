@@ -36,7 +36,7 @@ struct IconInfo {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Cache {
+pub struct Indices {
     // Reserved for future compatibility
     pub metadata: Version,
     pub icons: Vec<Icon>,
@@ -48,17 +48,17 @@ pub enum Version {
     V1,
 }
 
-impl<'de> Deserialize<'de> for Cache {
+impl<'de> Deserialize<'de> for Indices {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        struct CacheVisitor;
-        impl<'de> Visitor<'de> for CacheVisitor {
-            type Value = Cache;
+        struct DbVisitor;
+        impl<'de> Visitor<'de> for DbVisitor {
+            type Value = Indices;
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.write_str("Cache")
+                f.write_str("Indices")
             }
 
             fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
@@ -79,18 +79,18 @@ impl<'de> Deserialize<'de> for Cache {
                         });
                     }
                 }
-                Ok(Cache {
+                Ok(Indices {
                     metadata: metadata
                         .ok_or_else(|| serde::de::Error::missing_field("METADATA"))?,
                     icons,
                 })
             }
         }
-        deserializer.deserialize_map(CacheVisitor)
+        deserializer.deserialize_map(DbVisitor)
     }
 }
 
-impl Serialize for Cache {
+impl Serialize for Indices {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

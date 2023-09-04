@@ -2,7 +2,7 @@
 
 use crate::{
     error,
-    icon::{Cache, Codepoint, Icon},
+    icon::{Codepoint, Icon, Indices},
 };
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -11,7 +11,7 @@ use thisctx::WithContext;
 pub fn parse(s: &str) -> error::Result<Vec<Icon>> {
     let s = s.trim_start();
     if s.starts_with('{') {
-        Ok(serde_json::from_str::<Cache>(s)?.icons)
+        Ok(serde_json::from_str::<Indices>(s)?.icons)
     } else {
         parse_cheat_sheet(s)
     }
@@ -56,7 +56,7 @@ fn parse_cheat_sheet(s: &str) -> error::Result<Vec<Icon>> {
 
 #[cfg(test)]
 mod tests {
-    const CACHE: &str = r#"{
+    const INDEX: &str = r#"{
     "METADATA": "v1",
     "cod-account": { "codepoint": "eb99" },
     "cod-activate_breakpoints": { "codepoint": "ea97" },
@@ -77,8 +77,8 @@ const glyphs = {
 "#;
 
     #[test]
-    fn parse_cache() {
-        let icons = super::parse(CACHE).unwrap();
+    fn parse_index() {
+        let icons = super::parse(INDEX).unwrap();
         let expected = vec![
             icon!("cod-account", 0xeb99),
             icon!("cod-activate_breakpoints", 0xea97),

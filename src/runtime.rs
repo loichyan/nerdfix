@@ -2,7 +2,7 @@ use crate::{
     autocomplete::Autocompleter,
     cli::{OutputFormat, Replace, UserInput},
     error,
-    icon::{Cache, Icon},
+    icon::{Icon, Indices},
     util::{NGramSearcherExt, TryLazy},
 };
 use codespan_reporting::{
@@ -46,13 +46,13 @@ impl Runtime {
         RuntimeBuilder::default()
     }
 
-    pub fn save_cache(&self, path: &Path) -> error::Result<()> {
-        info!("Save cache to '{}'", path.display());
-        let cache = Cache {
+    pub fn generate_indices(&self, path: &Path) -> error::Result<()> {
+        info!("Save indices to '{}'", path.display());
+        let indices = Indices {
             metadata: crate::icon::Version::V1,
             icons: self.icons.values().cloned().collect(),
         };
-        let content = serde_json::to_string(&cache).unwrap();
+        let content = serde_json::to_string(&indices).unwrap();
         std::fs::write(path, content)?;
         Ok(())
     }

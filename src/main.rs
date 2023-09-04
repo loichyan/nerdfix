@@ -19,7 +19,7 @@ use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
 
-static CACHED: &str = include_str!("./cached.json");
+static INDICES: &str = include_str!("./index.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = Source>,
@@ -77,7 +77,7 @@ fn main_impl() -> error::Result<()> {
 
     let mut rt = Runtime::builder();
     if args.input.is_empty() {
-        rt.load_input(CACHED).unwrap();
+        rt.load_input(INDICES).unwrap();
     } else {
         for path in args.input.iter() {
             rt.load_input_file(path)?;
@@ -86,8 +86,8 @@ fn main_impl() -> error::Result<()> {
     // TODO: embed substitutions list
 
     match args.cmd {
-        // TODO: rename to index
-        Command::Cache { output } => rt.build().save_cache(&output)?,
+        Command::Cache { .. } => warn!("'cache' is deprecated, use 'index' instead"),
+        Command::Index { output } => rt.build().generate_indices(&output)?,
         Command::Check {
             format,
             source,
