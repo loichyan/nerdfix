@@ -2,7 +2,7 @@
 
 use crate::{
     error,
-    icon::{Codepoint, Icon, Indices},
+    icon::{Icon, Indices},
 };
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -45,7 +45,7 @@ fn parse_cheat_sheet(s: &str) -> error::Result<Vec<Icon>> {
                 icons.as_mut().unwrap().push(Icon {
                     name: caps.get(2).unwrap().as_str().to_owned(),
                     obsolete: caps.get(1).is_some(),
-                    codepoint: caps.get(3).unwrap().as_str().parse::<Codepoint>()?.0,
+                    codepoint: crate::icon::parse_codepoint(caps.get(3).unwrap().as_str())?,
                 });
             }
         }
