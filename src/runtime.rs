@@ -10,7 +10,6 @@ use codespan_reporting::{
     files::SimpleFiles,
     term::{self, termcolor::StandardStream},
 };
-use colored::Colorize;
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
@@ -115,20 +114,17 @@ impl Runtime {
                     // Push all non-patched content.
                     let res = result.get_or_insert_with(|| content[..start].to_owned());
                     if let Some(&last) = context.history.get(&icon.codepoint) {
-                        cprintln!("# Autofix with the last input '{}'".green, last);
+                        msginfo!("# Autofix with the last input '{}'", last);
                         ch = last;
                     } else if let Some(new) = self.get_substitutions(icon).next() {
-                        cprintln!("# Autofix with substitution '{}'".green, new.codepoint);
+                        msginfo!("# Autofix with substitution '{}'", new.codepoint);
                         ch = new.codepoint;
                     } else if let Some(new) = self.get_replacements(icon).next() {
-                        cprintln!("# Autofix with replacement '{}'".green, new.codepoint);
+                        msginfo!("# Autofix with replacement '{}'", new.codepoint);
                         ch = new.codepoint;
                     } else if context.select_first {
                         if let Some(&first) = candidates.first() {
-                            cprintln!(
-                                "# Autofix with the first suggestion '{}'".green,
-                                first.codepoint
-                            );
+                            msginfo!("# Autofix with the first suggestion '{}'", first.codepoint);
                             ch = first.codepoint;
                         } else {
                             error!(
@@ -225,7 +221,7 @@ impl Runtime {
             let input = match input.parse::<UserInput>() {
                 Ok(t) => t,
                 Err(error::Error::InvalidInput) => {
-                    cprintln!("# Invalid input!");
+                    msgerror!("# Invalid input!");
                     continue;
                 }
                 Err(e) => return Err(e),
@@ -235,21 +231,21 @@ impl Runtime {
                     if let Some(icon) = self.icons.get(&name) {
                         icon
                     } else {
-                        cprintln!("# '{}' is not a valid icon name!", name);
+                        msgerror!("# '{}' is not a valid icon name!", name);
                         continue;
                     }
                 }
                 UserInput::Char(ch) => match self.index().get(&ch) {
                     Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
                     _ => {
-                        cprintln!("# '{}' is not a valid icon!", ch);
+                        msgerror!("# '{}' is not a valid icon!", ch);
                         continue;
                     }
                 },
                 UserInput::Candidate(i) => match candidates.get(i - 1) {
                     Some(&icon) => icon,
                     None => {
-                        cprintln!("# '{}' is not a valid candidate!", i);
+                        msgerror!("# '{}' is not a valid candidate!", i);
                         continue;
                     }
                 },
@@ -257,13 +253,13 @@ impl Runtime {
                     match char::from_u32(hex).and_then(|ch| self.index().get(&ch)) {
                         Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
                         _ => {
-                            cprintln!("# 'U+{:X}' is not a valid icon codepoint!", hex);
+                            msgerror!("# 'U+{:X}' is not a valid icon codepoint!", hex);
                             continue;
                         }
                     }
                 }
             };
-            cprintln!("# Your input: {} {}".green, icon.codepoint, icon.name);
+            msginfo!("# Your input: {} {}", icon.codepoint, icon.name);
             break Some(icon.codepoint);
         })
     }

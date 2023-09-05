@@ -16,13 +16,24 @@ macro_rules! icon {
     };
 }
 
-/// Prints colored output, `red` color is used by default.
-macro_rules! cprintln {
+macro_rules! __coloredmsg {
+    ($fmt:literal.$color:ident, $($args:expr,)*) => {{
+        let color = nu_ansi_term::Color::$color;
+        println!(concat!("{}", $fmt, "{}"), color.prefix() $(,$args)* ,color.suffix());
+    }};
+}
+
+/// Prints an ERROR message.
+macro_rules! msgerror {
     ($fmt:literal $(,$args:expr)* $(,)?) => {
-        cprintln!($fmt.red $(,$args)*);
+        __coloredmsg!($fmt.Red, $($args,)*)
     };
-    ($fmt:literal.$color:ident $(,$args:expr)* $(,)?) => {
-        println!("{}", format!($fmt $(,$args)*).$color());
+}
+
+/// Prints an INFO message.
+macro_rules! msginfo {
+    ($fmt:literal $(,$args:expr)* $(,)?) => {
+        __coloredmsg!($fmt.Blue, $($args,)*)
     };
 }
 
