@@ -29,11 +29,11 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.rustup
-          key: setup-rust-toolchain-${{ runner.os }}-1.65
+          key: setup-rust-toolchain-${{ runner.os }}-1.70
 
       - name: Setup Rust toolchain
         if: steps.rust-toolchain-cache.outputs.cache-hit != 'true'
-        uses: dtolnay/rust-toolchain@1.65
+        uses: dtolnay/rust-toolchain@1.70
         with:
           targets: ${{ matrix.cfg.target }}
 

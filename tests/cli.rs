@@ -11,8 +11,8 @@ impl Command {
     fn assert_stripped(&mut self) -> Assert {
         let output = self.unwrap();
         Assert::new(Output {
-            stdout: strip_ansi_escapes::strip(output.stdout).unwrap(),
-            stderr: strip_ansi_escapes::strip(output.stderr).unwrap(),
+            stdout: strip_ansi_escapes::strip(output.stdout),
+            stderr: strip_ansi_escapes::strip(output.stderr),
             ..output
         })
     }
@@ -46,7 +46,7 @@ fn check_with_input() {
     Command::cargo_bin("nerdfix")
         .unwrap()
         .arg("-i")
-        .arg("tests/test-input.txt")
+        .arg("tests/test-input.json")
         .arg("check")
         .arg("tests/test-data.txt")
         .assert_stripped()

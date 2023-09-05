@@ -19,7 +19,8 @@ use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
 
-static CACHED: &str = include_str!("./cached.txt");
+static INDICES: &str = include_str!("./index.json");
+static SUBSTITUTIONS: &str = include_str!("./substitution.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = Source>,
@@ -34,6 +35,7 @@ fn walk<'a>(
                 .flat_map(|Source(input, output)| {
                     if let Some(output) = output {
                         warn!(
+                            // TODO: replace 'if' with 'when'
                             "Output path is ignored if '--recursive': {}",
                             output.display()
                         );
@@ -76,20 +78,29 @@ fn main_impl() -> error::Result<()> {
 
     let mut rt = Runtime::builder();
     if args.input.is_empty() {
-        rt.load_cache(CACHED);
+        rt.load_input(INDICES).unwrap();
     } else {
         for path in args.input.iter() {
-            rt.load_input(path)?;
+            rt.load_input_file(path)?;
         }
     }
-    let rt = rt.build();
+    if args.substitutions.is_empty() {
+        rt.load_substitutions(SUBSTITUTIONS).unwrap();
+    } else {
+        for path in args.input.iter() {
+            rt.load_substitutions_file(path)?;
+        }
+    }
+
     match args.cmd {
-        Command::Cache { output } => rt.save_cache(&output)?,
+        Command::Cache { .. } => warn!("'cache' is deprecated, use 'index' instead"),
+        Command::Index { output } => rt.build().generate_indices(&output)?,
         Command::Check {
             format,
             source,
             recursive,
         } => {
+            let rt = rt.build();
             let mut context = CheckerContext {
                 format,
                 ..Default::default()
@@ -114,6 +125,7 @@ fn main_impl() -> error::Result<()> {
             if yes {
                 warn!("'-y/--yes' is deprecated, use '-w/--write' instead");
             }
+            let rt = rt.build();
             let mut context = CheckerContext {
                 replace,
                 write,
@@ -146,7 +158,7 @@ fn main_impl() -> error::Result<()> {
             }
         }
         Command::Search {} => {
-            rt.prompt_input_icon(None).ok();
+            rt.build().prompt_input_icon(None).ok();
         }
     }
     Ok(())

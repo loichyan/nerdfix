@@ -18,8 +18,14 @@ pub enum Error {
         #[source]
         walkdir::Error,
     ),
-    #[error("{0} at line {1}")]
-    CorruptedCache(String, #[thisctx(no_generic)] usize),
+    #[error("Invalid cheat sheet at line {0}")]
+    InvalidCheatSheet(#[thisctx(no_generic)] usize),
+    #[error("Failed to parse json")]
+    Json(
+        #[from]
+        #[source]
+        serde_json::Error,
+    ),
     #[error("Failed when reporting diagnostics")]
     Reporter(
         #[from]
@@ -34,6 +40,8 @@ pub enum Error {
     ),
     #[error("Invalid input")]
     InvalidInput,
+    #[error("Invalid codepoint")]
+    InvalidCodepoint,
     #[error("Operation was interrupted by the user")]
     Interrupted,
     #[error(transparent)]

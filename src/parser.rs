@@ -2,137 +2,94 @@
 
 use crate::{
     error,
-    icon::{CachedIcon, Icon},
+    icon::{Codepoint, Icon, Indices},
 };
-use select::document::Document;
-use thisctx::IntoError;
+use once_cell::sync::Lazy;
+use regex::Regex;
+use thisctx::WithContext;
 
 pub fn parse(s: &str) -> error::Result<Vec<Icon>> {
-    if s.is_empty() {
-        return Ok(Vec::default());
+    let s = s.trim_start();
+    if s.starts_with('{') {
+        Ok(serde_json::from_str::<Indices>(s)?.icons)
+    } else {
+        parse_cheat_sheet(s)
     }
-    let mut lines = s.lines().enumerate();
-    let version = tryb!({
-        let (_, first_line) = lines.next()?;
-        let (brand, version) = first_line.split_once(' ')?;
-        if brand != "nerdfix" {
-            return None;
-        }
-        Some(match version {
-            "v1" => Version::V1,
-            _ => Version::Undefined,
-        })
-    });
-    match version {
-        Some(Version::V1) => {
-            let mut icons = Vec::default();
-            for (i, line) in lines {
-                let CachedIcon(icon) = line
-                    .parse()
-                    .map_err(|e| error::CorruptedCache(e, i + 1).build())?;
-                icons.push(icon);
+}
+
+fn parse_cheat_sheet(s: &str) -> error::Result<Vec<Icon>> {
+    static RE: Lazy<Regex> = Lazy::new(|| Regex::new(r#"^ *"nf(old)?-(.+)": "(.+)",$"#).unwrap());
+
+    enum State {
+        Init,
+        Matching,
+    }
+
+    let mut state = State::Init;
+    let mut icons = None::<Vec<Icon>>;
+    let mut n = 0;
+    for line in s.lines() {
+        n += 1;
+        match state {
+            State::Init => {
+                if line == "const glyphs = {" {
+                    state = State::Matching;
+                    icons = Some(<_>::default());
+                }
             }
-            Ok(icons)
-        }
-        Some(Version::Undefined) => Err(error::CorruptedCache("Undefined version", 1usize).build()),
-        None => {
-            let Some(start) = s.find('<') else { return Ok(vec![]) };
-            // Skips yaml metadata.
-            let s = &s[start..];
-            let mut parser = Parser::new(s);
-            parser.parse()?;
-            Ok(parser.icons)
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-enum Version {
-    Undefined,
-    V1,
-}
-
-struct Parser<'a> {
-    document: Document,
-    icons: Vec<Icon>,
-    _source: &'a str,
-}
-
-impl<'a> Parser<'a> {
-    pub fn new(s: &'a str) -> Self {
-        Self {
-            document: Document::from(s),
-            icons: Default::default(),
-            _source: s,
-        }
-    }
-
-    pub fn parse(&mut self) -> error::Result<()> {
-        use select::predicate::*;
-        for node in self
-            .document
-            .find(Attr("id", "glyphCheatSheet").child(Element))
-        {
-            tryb!({
-                let name = node
-                    .find(Class("class-name").child(Text))
-                    .next()?
-                    .as_text()?
-                    .trim();
-                let name = name.strip_prefix("nf-").unwrap_or(name);
-                let codepoint = node
-                    .find(Class("codepoint").child(Text))
-                    .next()?
-                    .as_text()?;
-                let codepoint = u32::from_str_radix(codepoint, 16).ok()?;
-                let codepoint = char::from_u32(codepoint)?;
-                let obsolete = tryb!({
-                    node.find(Class("corner-text").child(Text))
-                        .next()?
-                        .as_text()
+            State::Matching => {
+                if line == "}" {
+                    break;
+                }
+                let caps = RE.captures(line).context(error::InvalidCheatSheet(n))?;
+                icons.as_mut().unwrap().push(Icon {
+                    name: caps.get(2).unwrap().as_str().to_owned(),
+                    obsolete: caps.get(1).is_some(),
+                    codepoint: caps.get(3).unwrap().as_str().parse::<Codepoint>()?.0,
                 });
-                let obsolete = matches!(obsolete, Some("obsolete" | "removed"));
-                self.icons.push(Icon {
-                    name: name.to_owned(),
-                    codepoint,
-                    obsolete,
-                });
-                Some(())
-            });
+            }
         }
-        Ok(())
     }
+
+    icons.context(error::InvalidCheatSheet(0))
 }
 
 #[cfg(test)]
 mod tests {
+    const INDEX: &str = r#"{
+    "METADATA": "v1",
+    "cod-account": { "codepoint": "eb99" },
+    "cod-activate_breakpoints": { "codepoint": "ea97" },
+    "mdi-access_point": { "codepoint": "f501", "obsolete": true },
+    "mdi-access_point_network": { "codepoint": "f502", "obsolete": true }
+}"#;
+
     // Author: Ryan L McIntyre
     // License: MIT
     // Upstream: https://github.com/ryanoasis/nerd-fonts/blob/gh-pages/_posts/2017-01-04-icon-cheat-sheet.md
     const CHEAT_SHEET: &str = r#"
-<div id="glyphCheatSheet" class="nerd-font-cheat-sheet">
-  <div class="column">
-    <div class="nf nf-cod-account center"></div>
-    <div class="class-name">nf-cod-account</div><div title="Copy Hex Code to Clipboard" class="codepoint">eb99</div>
-  </div>
-  <div class="column">
-    <div class="nf nf-cod-activate_breakpoints center"></div>
-    <div class="class-name">nf-cod-activate_breakpoints</div><div title="Copy Hex Code to Clipboard" class="codepoint">ea97</div>
-  </div>
-  <div class="column">
-    <span class="corner-red"></span><span class="corner-text">obsolete</span>
-    <div class="nf nf-mdi-access_point center"></div>
-    <div class="class-name">nf-mdi-access_point</div><div title="Copy Hex Code to Clipboard" class="codepoint">f501</div>
-  </div>
-  <div class="column">
-    <span class="corner-red"></span><span class="corner-text">removed</span>
-    <div class="nf nf-mdi-access_point_network center"></div>
-    <div class="class-name">nf-mdi-access_point_network</div><div title="Copy Hex Code to Clipboard" class="codepoint">f502</div>
-  </div>
-</div>"#;
+const glyphs = {
+    "nf-cod-account": "eb99",
+    "nf-cod-activate_breakpoints": "ea97",
+    "nfold-mdi-access_point": "f501",
+    "nfold-mdi-access_point_network": "f502",
+}
+"#;
 
     #[test]
-    fn parser() {
+    fn parse_index() {
+        let icons = super::parse(INDEX).unwrap();
+        let expected = vec![
+            icon!("cod-account", 0xeb99),
+            icon!("cod-activate_breakpoints", 0xea97),
+            icon!("mdi-access_point", 0xf501, true),
+            icon!("mdi-access_point_network", 0xf502, true),
+        ];
+        assert_eq!(icons, expected);
+    }
+
+    #[test]
+    fn parse_cheat_sheet() {
         let icons = super::parse(CHEAT_SHEET).unwrap();
         let expected = vec![
             icon!("cod-account", 0xeb99),

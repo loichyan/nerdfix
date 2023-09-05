@@ -2,7 +2,7 @@ use crate::{
     autocomplete::Autocompleter,
     cli::{OutputFormat, Replace, UserInput},
     error,
-    icon::{CachedIcon, Icon},
+    icon::{Icon, Indices},
     util::{NGramSearcherExt, TryLazy},
 };
 use codespan_reporting::{
@@ -38,6 +38,7 @@ pub struct Runtime {
     icons: Rc<IndexMap<String, Icon>>,
     index: OnceCell<HashMap<char, usize>>,
     corpus: OnceCell<Rc<NGram>>,
+    substitutions: HashMap<String, Vec<String>>,
 }
 
 impl Runtime {
@@ -45,13 +46,13 @@ impl Runtime {
         RuntimeBuilder::default()
     }
 
-    pub fn save_cache(&self, path: &Path) -> error::Result<()> {
-        info!("Save cache to '{}'", path.display());
-        let mut content = String::from("nerdfix v1\n");
-        for icon in self.icons.values() {
-            let icon = CachedIcon(icon);
-            content.push_str(&format!("{icon}\n"));
-        }
+    pub fn generate_indices(&self, path: &Path) -> error::Result<()> {
+        info!("Save indices to '{}'", path.display());
+        let indices = Indices {
+            metadata: crate::icon::Version::V1,
+            icons: self.icons.values().cloned().collect(),
+        };
+        let content = serde_json::to_string(&indices).unwrap();
         std::fs::write(path, content)?;
         Ok(())
     }
@@ -112,19 +113,22 @@ impl Runtime {
                 if does_fix {
                     // Push all non-patched content.
                     let res = result.get_or_insert_with(|| content[..start].to_owned());
-                    // Autofix use history.
                     if let Some(&last) = context.history.get(&icon.codepoint) {
-                        cprintln!("# Auto fix it using last input '{}'".green, last);
+                        cprintln!("# Autofix by the last input '{}'".green, last);
                         ch = last;
-                    // Autofix use replacing.
                     } else if let Some(new) = self.try_replace(context, icon) {
-                        cprintln!("# Auto replace it with '{}'".green, new);
+                        cprintln!("# Autofix by the replacement '{}'".green, new);
                         ch = new;
-                    // Select the first candidate.
+                    } else if let Some(new) = self.try_substitutions(icon) {
+                        cprintln!("# Autofix by the substitution '{}'".green, new);
+                        ch = new;
                     } else if context.select_first {
                         let candidates = candidates.get()?;
                         if let Some(&first) = candidates.first() {
-                            cprintln!("# Select the first icon '{}'".green, first.codepoint);
+                            cprintln!(
+                                "# Autofix by the first suggestion '{}'".green,
+                                first.codepoint
+                            );
                             ch = first.codepoint;
                         } else {
                             error!(
@@ -132,8 +136,8 @@ impl Runtime {
                                 icon.codepoint, icon.name
                             );
                         }
-                    // Input a new icon
                     } else {
+                        // Input a new icon
                         match self.prompt_input_icon(Some(candidates.get()?)) {
                             Ok(Some(new)) => {
                                 context.history.insert(icon.codepoint, new);
@@ -167,7 +171,18 @@ impl Runtime {
         None
     }
 
+    fn try_substitutions(&self, icon: &Icon) -> Option<char> {
+        let substitutions = self.substitutions.get(&icon.name)?;
+        for name in substitutions {
+            if let Some(icon) = self.icons.get(name) {
+                return Some(icon.codepoint);
+            }
+        }
+        None
+    }
+
     fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {
+        // TODO: check substitutions first
         Ok(self
             .corpus()
             .searcher(&icon.name)
@@ -308,28 +323,48 @@ impl Runtime {
 #[derive(Default)]
 pub struct RuntimeBuilder {
     icons: IndexMap<String, Icon>,
+    substitutions: HashMap<String, Vec<String>>,
 }
 
 impl RuntimeBuilder {
-    pub fn load_input(&mut self, path: &Path) -> error::Result<()> {
+    pub fn load_input_file(&mut self, path: &Path) -> error::Result<()> {
         info!("Load input from '{}'", path.display());
         let content = std::fs::read_to_string(path)?;
-        let icons = crate::parser::parse(&content)?;
-        for icon in icons {
+        self.load_input(&content)?;
+        Ok(())
+    }
+
+    pub fn load_input(&mut self, content: &str) -> error::Result<()> {
+        for icon in crate::parser::parse(content)? {
             self.add_icon(icon);
         }
         Ok(())
     }
 
-    pub fn load_cache(&mut self, cached: &str) {
-        for icon in crate::parser::parse(cached).unwrap() {
-            self.add_icon(icon);
-        }
+    pub fn load_substitutions_file(&mut self, path: &Path) -> error::Result<()> {
+        info!("Load substitutions list from '{}'", path.display());
+        let content = std::fs::read_to_string(path)?;
+        self.load_substitutions(&content)?;
+        Ok(())
     }
 
-    pub fn build(self) -> Runtime {
+    pub fn load_substitutions(&mut self, content: &str) -> error::Result<()> {
+        let content = serde_json::from_str::<HashMap<String, Vec<String>>>(content)?;
+        for (k, v) in content {
+            self.substitutions.entry(k).or_default().extend(v);
+        }
+        Ok(())
+    }
+
+    pub fn build(mut self) -> Runtime {
+        // Ensure the same substitution is selected each time.
+        self.substitutions.values_mut().for_each(|v| {
+            v.sort();
+            v.dedup();
+        });
         Runtime {
             icons: Rc::new(self.icons),
+            substitutions: self.substitutions,
             ..Default::default()
         }
     }

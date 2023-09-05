@@ -10,16 +10,21 @@ const V_PATH: &str = "PATH";
 const V_SOURCE: &str = "SOURCE";
 const V_CLASSES: &str = "FROM,TO";
 const V_FORMAT: &str = "FORMAT";
-const CACHE_VERSION: &str = include_str!("cache-version");
-const CLAP_LONG_VERSION: &str =
-    formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, CACHE_VERSION);
+const INDEX_REV: &str = include_str!("index-rev");
+const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, INDEX_REV);
 
 #[derive(Debug, Parser)]
 #[command(author, version, long_version = CLAP_LONG_VERSION)]
 pub struct Cli {
-    /// Path(s) to load the icons cheat sheet or cached content.
+    /// Path(s) to load the icons cheat sheet or indices.
     #[arg(short, long, value_name = V_PATH)]
     pub input: Vec<PathBuf>,
+    /// Load predfined substitutions lists used in autofix.
+    ///
+    /// A substitutions list is a json object whose key is icon name and whose
+    /// value is a list of icons used to replace the icon.
+    #[arg(long, value_name(V_PATH))]
+    pub substitutions: Vec<PathBuf>,
     /// Decrease log level.
     #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 0)]
     pub quiet: u8,
@@ -32,9 +37,15 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Cache parsed icons.
+    /// [deprecated] Cache parsed icons.
     Cache {
         /// Path to save the cached content.
+        #[arg(short, long, value_name(V_PATH))]
+        output: PathBuf,
+    },
+    /// Generate icons indices.
+    Index {
+        /// Path to save the output.
         #[arg(short, long, value_name(V_PATH))]
         output: PathBuf,
     },
@@ -52,7 +63,7 @@ pub enum Command {
     },
     /// Fix obsolete icons interactively.
     Fix {
-        /// Deprecated. Use `-w/--write` instead.
+        /// [deprecated] Write content without confirmation.
         #[arg(short, long)]
         yes: bool,
         /// Write content without confirmation.
