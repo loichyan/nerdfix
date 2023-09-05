@@ -1,7 +1,6 @@
 use crate::error;
 use noodler::NGramSearcher;
-use once_cell::unsync::OnceCell;
-use std::{cell::Cell, fmt, marker::PhantomData};
+use std::fmt;
 
 #[cfg(test)]
 macro_rules! icon {
@@ -55,26 +54,6 @@ impl<E: std::error::Error> std::error::Error for ErrorWithSource<E> {
 impl From<crate::error::Error> for ErrorWithSource {
     fn from(value: crate::error::Error) -> Self {
         Self(value)
-    }
-}
-
-pub struct TryLazy<T, E, F> {
-    cell: OnceCell<T>,
-    init: Cell<Option<F>>,
-    _marker: PhantomData<E>,
-}
-
-impl<T, E, F: FnOnce() -> Result<T, E>> TryLazy<T, E, F> {
-    pub fn new(f: F) -> Self {
-        Self {
-            cell: OnceCell::default(),
-            init: Cell::new(Some(f)),
-            _marker: PhantomData,
-        }
-    }
-
-    pub fn get(&self) -> Result<&T, E> {
-        self.cell.get_or_try_init(|| self.init.take().unwrap()())
     }
 }
 

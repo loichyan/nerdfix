@@ -77,6 +77,7 @@ fn main_impl() -> error::Result<()> {
     tracing::subscriber::set_global_default(subscriber).context(error::Any)?;
 
     let mut rt = Runtime::builder();
+    rt.with_replacements(args.replace);
     if args.input.is_empty() {
         rt.load_input(INDICES).unwrap();
     } else {
@@ -84,10 +85,10 @@ fn main_impl() -> error::Result<()> {
             rt.load_input_file(path)?;
         }
     }
-    if args.substitutions.is_empty() {
+    if args.substitution.is_empty() {
         rt.load_substitutions(SUBSTITUTIONS).unwrap();
     } else {
-        for path in args.input.iter() {
+        for path in args.substitution.iter() {
             rt.load_substitutions_file(path)?;
         }
     }
@@ -118,7 +119,6 @@ fn main_impl() -> error::Result<()> {
             yes,
             write,
             select_first,
-            replace,
             recursive,
             source,
         } => {
@@ -127,7 +127,6 @@ fn main_impl() -> error::Result<()> {
             }
             let rt = rt.build();
             let mut context = CheckerContext {
-                replace,
                 write,
                 select_first,
                 ..Default::default()

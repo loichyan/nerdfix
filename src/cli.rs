@@ -17,19 +17,25 @@ const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VER
 #[command(author, version, long_version = CLAP_LONG_VERSION)]
 pub struct Cli {
     /// Path(s) to load the icons cheat sheet or indices.
-    #[arg(short, long, value_name = V_PATH)]
+    #[arg(global = true, short, long, value_name = V_PATH)]
     pub input: Vec<PathBuf>,
+    /// Replace the prefix of an icon name with another.
+    ///
+    /// For example, use `--replace=mdi,md` to replace all `mdi*`
+    /// icons with the same ones in `md*`.
+    #[arg(global = true, long, value_name(V_CLASSES))]
+    pub replace: Vec<Replacement>,
     /// Load predfined substitutions lists used in autofix.
     ///
     /// A substitutions list is a json object whose key is icon name and whose
     /// value is a list of icons used to replace the icon.
-    #[arg(long, value_name(V_PATH))]
-    pub substitutions: Vec<PathBuf>,
+    #[arg(global = true, long, value_name(V_PATH))]
+    pub substitution: Vec<PathBuf>,
     /// Decrease log level.
-    #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 0)]
+    #[arg(global = true, short, long, action = clap::ArgAction::Count, default_value_t = 0)]
     pub quiet: u8,
     /// Increase log level.
-    #[arg(short, long, action = clap::ArgAction::Count, default_value_t = 2)]
+    #[arg(global = true, short, long, action = clap::ArgAction::Count, default_value_t = 2)]
     pub verbose: u8,
     #[command(subcommand)]
     pub cmd: Command,
@@ -72,12 +78,6 @@ pub enum Command {
         /// Select the first (and most similar) one for all suggestions.
         #[arg(long)]
         select_first: bool,
-        /// Replace the prefix of an icon name with another.
-        ///
-        /// For example, use `--replace=mdi,md` to replace all `mdi*`
-        /// icons with the same ones in `md*`.
-        #[arg(long, value_name(V_CLASSES))]
-        replace: Vec<Replace>,
         /// Recursively traverse all directories.
         #[arg(short, long)]
         recursive: bool,
@@ -122,12 +122,12 @@ impl FromStr for UserInput {
 }
 
 #[derive(Clone, Debug)]
-pub struct Replace {
+pub struct Replacement {
     pub from: String,
     pub to: String,
 }
 
-impl FromStr for Replace {
+impl FromStr for Replacement {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
