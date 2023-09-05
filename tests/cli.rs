@@ -45,8 +45,8 @@ fn check() {
 fn check_with_input() {
     Command::cargo_bin("nerdfix")
         .unwrap()
-        .arg("-i")
-        .arg("tests/test-input.json")
+        .arg("--input")
+        .arg("tests/test-index.json")
         .arg("check")
         .arg("tests/test-data.txt")
         .assert_stripped()
@@ -65,4 +65,50 @@ fn check_json() {
         .assert_stripped()
         .success()
         .stdout(cmp_or_override("check_json"));
+}
+
+#[cfg(unix)]
+#[test]
+fn fix() {
+    Command::cargo_bin("nerdfix")
+        .unwrap()
+        .arg("fix")
+        .arg("--select-first")
+        .arg("--write")
+        .arg("tests/test-data.txt:/dev/null")
+        .assert_stripped()
+        .success()
+        .stdout(cmp_or_override("fix"));
+}
+
+#[cfg(unix)]
+#[test]
+fn fix_with_replacements() {
+    Command::cargo_bin("nerdfix")
+        .unwrap()
+        .arg("fix")
+        .arg("--select-first")
+        .arg("--write")
+        .arg("--replace")
+        .arg("mdi-,md-")
+        .arg("tests/test-data.txt:/dev/null")
+        .assert_stripped()
+        .success()
+        .stdout(cmp_or_override("fix_with_replacements"));
+}
+
+#[cfg(unix)]
+#[test]
+fn fix_with_substitutions() {
+    Command::cargo_bin("nerdfix")
+        .unwrap()
+        .arg("fix")
+        .arg("--select-first")
+        .arg("--write")
+        .arg("--substitution")
+        .arg("tests/test-substitution.json")
+        .arg("tests/test-data.txt:/dev/null")
+        .assert_stripped()
+        .success()
+        .stdout(cmp_or_override("fix_with_substitutions"));
 }

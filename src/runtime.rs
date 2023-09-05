@@ -1,9 +1,9 @@
 use crate::{
     autocomplete::Autocompleter,
-    cli::{OutputFormat, Replace, UserInput},
+    cli::{OutputFormat, Replacement, UserInput},
     error,
     icon::{Icon, Indices},
-    util::{NGramSearcherExt, TryLazy},
+    util::NGramSearcherExt,
 };
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
@@ -14,7 +14,7 @@ use colored::Colorize;
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
-use once_cell::unsync::OnceCell;
+use once_cell::unsync::{Lazy, OnceCell};
 use serde::Serialize;
 use std::{
     collections::HashMap,
@@ -39,6 +39,7 @@ pub struct Runtime {
     index: OnceCell<HashMap<char, usize>>,
     corpus: OnceCell<Rc<NGram>>,
     substitutions: HashMap<String, Vec<String>>,
+    replacements: Vec<Replacement>,
 }
 
 impl Runtime {
@@ -61,7 +62,7 @@ impl Runtime {
         &self,
         context: &mut CheckerContext,
         path: &Path,
-        does_fix: bool,
+        should_fix: bool,
     ) -> error::Result<Option<String>> {
         info!("Check input file '{}'", path.display());
         let mut result = None::<String>;
@@ -79,7 +80,7 @@ impl Runtime {
                 while !content.is_char_boundary(end) {
                     end += 1;
                 }
-                let candidates = TryLazy::new(|| self.candidates(icon));
+                let candidates = Lazy::new(|| self.get_candidates(icon));
                 match context.format {
                     OutputFormat::Console => {
                         let diag = Diagnostic::new(Severity::Info.into())
@@ -90,7 +91,7 @@ impl Runtime {
                             .with_labels(vec![Label::primary(file_id, start..end).with_message(
                                 format!("Icon '{}' is marked as obsolete", icon.name),
                             )])
-                            .with_notes(self.diagnostic_notes(candidates.get()?)?);
+                            .with_notes(self.diagnostic_notes(&candidates)?);
                         term::emit(&mut context.writer, &context.config, &context.files, &diag)?;
                     }
                     OutputFormat::Json => {
@@ -110,23 +111,22 @@ impl Runtime {
                         )?
                     }
                 }
-                if does_fix {
+                if should_fix {
                     // Push all non-patched content.
                     let res = result.get_or_insert_with(|| content[..start].to_owned());
                     if let Some(&last) = context.history.get(&icon.codepoint) {
-                        cprintln!("# Autofix by the last input '{}'".green, last);
+                        cprintln!("# Autofix with the last input '{}'".green, last);
                         ch = last;
-                    } else if let Some(new) = self.try_replace(context, icon) {
-                        cprintln!("# Autofix by the replacement '{}'".green, new);
-                        ch = new;
-                    } else if let Some(new) = self.try_substitutions(icon) {
-                        cprintln!("# Autofix by the substitution '{}'".green, new);
-                        ch = new;
+                    } else if let Some(new) = self.get_substitutions(icon).next() {
+                        cprintln!("# Autofix with substitution '{}'".green, new.codepoint);
+                        ch = new.codepoint;
+                    } else if let Some(new) = self.get_replacements(icon).next() {
+                        cprintln!("# Autofix with replacement '{}'".green, new.codepoint);
+                        ch = new.codepoint;
                     } else if context.select_first {
-                        let candidates = candidates.get()?;
                         if let Some(&first) = candidates.first() {
                             cprintln!(
-                                "# Autofix by the first suggestion '{}'".green,
+                                "# Autofix with the first suggestion '{}'".green,
                                 first.codepoint
                             );
                             ch = first.codepoint;
@@ -138,7 +138,7 @@ impl Runtime {
                         }
                     } else {
                         // Input a new icon
-                        match self.prompt_input_icon(Some(candidates.get()?)) {
+                        match self.prompt_input_icon(Some(&candidates)) {
                             Ok(Some(new)) => {
                                 context.history.insert(icon.codepoint, new);
                                 ch = new;
@@ -162,34 +162,27 @@ impl Runtime {
         Ok(result)
     }
 
-    fn try_replace(&self, ctx: &CheckerContext, icon: &Icon) -> Option<char> {
-        for rep in ctx.replace.iter() {
-            let Some(name) = icon.name.strip_prefix(&rep.from) else { continue };
-            let Some(new_icon) = self.icons.get(&format!("{}{name}", rep.to)) else { continue };
-            return Some(new_icon.codepoint);
-        }
-        None
-    }
-
-    fn try_substitutions(&self, icon: &Icon) -> Option<char> {
-        let substitutions = self.substitutions.get(&icon.name)?;
-        for name in substitutions {
-            if let Some(icon) = self.icons.get(name) {
-                return Some(icon.codepoint);
-            }
-        }
-        None
-    }
-
-    fn candidates(&self, icon: &Icon) -> error::Result<Vec<&Icon>> {
-        // TODO: check substitutions first
-        Ok(self
-            .corpus()
+    fn get_candidates<'a>(&'a self, icon: &'a Icon) -> Vec<&'a Icon> {
+        self.corpus()
             .searcher(&icon.name)
             .exec_sorted_stable()
             .map(|((_, id), _)| &self.icons[*id])
             .take(MAX_CHOICES)
-            .collect_vec())
+            .collect()
+    }
+
+    fn get_replacements<'a>(&'a self, icon: &'a Icon) -> impl 'a + Iterator<Item = &'a Icon> {
+        self.replacements.iter().filter_map(|rep| {
+            let name = icon.name.strip_prefix(&rep.from)?;
+            self.icons.get(&format!("{}{name}", rep.to))
+        })
+    }
+
+    fn get_substitutions<'a>(&'a self, icon: &'a Icon) -> impl 'a + Iterator<Item = &'a Icon> {
+        self.substitutions
+            .get(&icon.name)
+            .into_iter()
+            .flat_map(|substitutions| substitutions.iter().filter_map(|name| self.icons.get(name)))
     }
 
     fn diagnostic_notes(&self, candidates: &[&Icon]) -> error::Result<Vec<String>> {
@@ -324,6 +317,7 @@ impl Runtime {
 pub struct RuntimeBuilder {
     icons: IndexMap<String, Icon>,
     substitutions: HashMap<String, Vec<String>>,
+    replacements: Option<Vec<Replacement>>,
 }
 
 impl RuntimeBuilder {
@@ -356,6 +350,10 @@ impl RuntimeBuilder {
         Ok(())
     }
 
+    pub fn with_replacements(&mut self, replacements: Vec<Replacement>) {
+        self.replacements = Some(replacements);
+    }
+
     pub fn build(mut self) -> Runtime {
         // Ensure the same substitution is selected each time.
         self.substitutions.values_mut().for_each(|v| {
@@ -365,6 +363,7 @@ impl RuntimeBuilder {
         Runtime {
             icons: Rc::new(self.icons),
             substitutions: self.substitutions,
+            replacements: self.replacements.unwrap_or_default(),
             ..Default::default()
         }
     }
@@ -381,7 +380,6 @@ pub struct CheckerContext {
     pub writer: StandardStream,
     pub config: term::Config,
     pub history: HashMap<char, char>,
-    pub replace: Vec<Replace>,
     pub format: OutputFormat,
     pub write: bool,
     pub select_first: bool,
@@ -394,7 +392,6 @@ impl Default for CheckerContext {
             writer: StandardStream::stdout(term::termcolor::ColorChoice::Always),
             config: term::Config::default(),
             history: HashMap::default(),
-            replace: Vec::default(),
             format: OutputFormat::default(),
             write: false,
             select_first: false,
