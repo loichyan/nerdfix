@@ -35,8 +35,7 @@ fn walk<'a>(
                 .flat_map(|Source(input, output)| {
                     if let Some(output) = output {
                         warn!(
-                            // TODO: replace 'if' with 'when'
-                            "Output path is ignored if '--recursive': {}",
+                            "Output path is ignored when '--recursive': {}",
                             output.display()
                         );
                     }

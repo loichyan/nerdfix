@@ -209,7 +209,7 @@ impl Runtime {
         Ok(loop {
             let prompt = inquire::Text::new("Input an icon:")
                 .with_formatter(&|s| fmt_input(s).to_owned())
-                .with_help_message("(Tab) to autocomplete, (Esc) to cancel, (Ctrl-C) to abort")
+                .with_help_message("(Tab) to autocomplete, (Esc) to cancel, (Ctrl_C) to abort")
                 .with_autocomplete(self.autocompleter(candidates.len()));
             let input = match prompt.prompt() {
                 Ok(t) => t,

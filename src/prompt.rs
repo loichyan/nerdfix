@@ -5,7 +5,7 @@ use thisctx::IntoError;
 
 pub fn prompt_yes_or_no(msg: &str, help: Option<&str>) -> error::Result<YesOrNo> {
     match inquire::CustomType::<YesOrNo>::new(msg)
-        .with_help_message(help.unwrap_or("(Y)es/(N)o/(A)ll yes, (Ctrl-C) to abort"))
+        .with_help_message(help.unwrap_or("(Y)es/(N)o/(A)ll yes, (Ctrl_C) to abort"))
         .prompt()
     {
         Err(InquireError::OperationInterrupted) => error::Interrupted.fail(),

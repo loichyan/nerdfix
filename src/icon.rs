@@ -1,10 +1,14 @@
 //! Nerd font icons infomation.
 
 use crate::error;
-use derive_more::Display;
 use serde::{de::Visitor, ser::SerializeMap, Deserialize, Deserializer, Serialize, Serializer};
-use std::{fmt, str::FromStr};
+use std::fmt;
 use thisctx::IntoError;
+
+pub(crate) fn parse_codepoint(s: &str) -> error::Result<char> {
+    let v = u32::from_str_radix(s, 16).map_err(|_| error::InvalidCodepoint.build())?;
+    char::from_u32(v).ok_or_else(|| error::InvalidCodepoint.build())
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Icon {
@@ -13,23 +17,10 @@ pub struct Icon {
     pub obsolete: bool,
 }
 
-// TODO: remove unused trait impl
-impl PartialOrd for Icon {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.name.partial_cmp(&other.name)
-    }
-}
-
-impl Ord for Icon {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.name.cmp(&other.name)
-    }
-}
-
 /// A helper type to deserialize/serialize [`Icon`].
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 struct IconInfo {
-    #[serde(deserialize_with = "Codepoint::de", serialize_with = "Codepoint::se")]
+    #[serde(with = "codepoint")]
     codepoint: char,
     #[serde(default)]
     obsolete: bool,
@@ -110,46 +101,16 @@ impl Serialize for Indices {
     }
 }
 
-// A helper type to deserialize/serialize [`Icon::codepoint`].
-#[derive(Debug, Display)]
-#[display(fmt = "{:x}", "u32::from(*_0)")]
-pub(crate) struct Codepoint(pub char);
+mod codepoint {
+    use super::*;
 
-impl FromStr for Codepoint {
-    type Err = error::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let v = u32::from_str_radix(s, 16).map_err(|_| error::InvalidCodepoint.build())?;
-        char::from_u32(v)
-            .map(Self)
-            .ok_or_else(|| error::InvalidCheatSheet(0).build())
-    }
-}
-
-impl Codepoint {
-    pub fn de<'de, D>(deserializer: D) -> Result<char, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        Self::deserialize(deserializer).map(|t| t.0)
-    }
-
-    fn se<S>(t: &char, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        Self(*t).serialize(serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Codepoint {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    pub(crate) fn deserialize<'de, D>(deserializer: D) -> Result<char, D::Error>
     where
         D: Deserializer<'de>,
     {
         struct CodepointVisitor;
         impl<'de> Visitor<'de> for CodepointVisitor {
-            type Value = Codepoint;
+            type Value = char;
 
             fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
                 f.write_str("codepoint")
@@ -159,18 +120,16 @@ impl<'de> Deserialize<'de> for Codepoint {
             where
                 E: serde::de::Error,
             {
-                v.parse().map_err(serde::de::Error::custom)
+                parse_codepoint(v).map_err(serde::de::Error::custom)
             }
         }
         deserializer.deserialize_str(CodepointVisitor)
     }
-}
 
-impl Serialize for Codepoint {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S>(this: &char, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(&format!("{:x}", *this as u32))
     }
 }
