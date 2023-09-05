@@ -1,3 +1,4 @@
+index_rev := `cat src/index-rev`
 md_rev := "f1e17ff8aad81f4b58f25a2e1956807297aa926e"
 
 _just := quote(just_executable()) + ' --justfile=' + quote(justfile())
@@ -8,11 +9,11 @@ _default:
 	@{{_just}} --list
 
 # Updates icon indices.
-update-index rev=`cat src/index-rev`:
+update-index:
 	#!/usr/bin/env bash
 	{{_setup_bash}}
 	tmp="$(mktemp)"
-	{{_curl}} "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/{{rev}}/_posts/2017-01-04-icon-cheat-sheet.md" -o"${tmp}"
+	{{_curl}} "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/{{index_rev}}/_posts/2017-01-04-icon-cheat-sheet.md" -o"${tmp}"
 	cargo run -- -i "${tmp}" index -o src/index.json
 	rm "${tmp}"
 
@@ -67,12 +68,7 @@ substitutions-md := '{
 update-substitution:
 	#!/usr/bin/env bash
 	{{_setup_bash}}
-	substitutions_md() {
-		jq -c 'with_entries(.key |= (sub("-";"_") | "nf-mdi-\(.)") | .value |= map(sub("-";"_") | "nf-md-\(.)"))'
-	}
 	{
-		echo '{{substitutions-md}}' | substitutions_md
-		{{_curl}} "https://raw.githubusercontent.com/Templarian/MaterialDesign-Meta/{{md_rev}}/meta.json" \
-			| jq '[.[] | {(.aliases[]): [.name]}] | add' \
-			| substitutions_md
-	} | jq -sc 'add' >src/substitution.json
+		echo '{{substitutions-md}}'
+		{{_curl}} "https://raw.githubusercontent.com/Templarian/MaterialDesign-Meta/{{md_rev}}/meta.json" | jq '.[] | {(.aliases[]): [.name]}'
+	} | jq -s 'add' | jq -c 'with_entries(.key |= (sub("-";"_") | "mdi-\(.)") | .value |= map(sub("-";"_") | "md-\(.)"))' >src/substitution.json
