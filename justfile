@@ -12,10 +12,8 @@ _default:
 update-index:
 	#!/usr/bin/env bash
 	{{_setup_bash}}
-	tmp="$(mktemp)"
-	{{_curl}} "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/{{index_rev}}/_posts/2017-01-04-icon-cheat-sheet.md" -o"${tmp}"
-	cargo run -- -i "${tmp}" index -o src/index.json
-	rm "${tmp}"
+	{{_curl}} "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/{{index_rev}}/_posts/2017-01-04-icon-cheat-sheet.md" \
+	| cargo run -- -i - index -o src/index.json
 
 # https://github.com/loichyan/nerdfix/issues/9#issuecomment-1576944348
 substitutions-md := '{
@@ -71,4 +69,8 @@ update-substitution:
 	{
 		echo '{{substitutions-md}}'
 		{{_curl}} "https://raw.githubusercontent.com/Templarian/MaterialDesign-Meta/{{md_rev}}/meta.json" | jq '.[] | {(.aliases[]): [.name]}'
-	} | jq -s 'add' | jq -c 'with_entries(.key |= (sub("-";"_") | "mdi-\(.)") | .value |= map(sub("-";"_") | "md-\(.)"))' >src/substitution.json
+	} \
+	| jq -cs 'add' \
+	| jq -c 'with_entries(.key |= (sub("-";"_") | "mdi-\(.)") | .value |= map(sub("-";"_") | "md-\(.)"))' \
+	| jq -c '{ substitution: . }' \
+	>src/substitution.json

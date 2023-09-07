@@ -11,16 +11,13 @@ mod runtime;
 shadow_rs::shadow!(shadow);
 
 use clap::Parser;
-use cli::{Command, Source};
+use cli::{Command, InputFrom, Source};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
 use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
-
-static INDICES: &str = include_str!("./index.json");
-static SUBSTITUTIONS: &str = include_str!("./substitution.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = Source>,
@@ -68,6 +65,7 @@ fn main_impl() -> error::Result<()> {
         3 => Level::DEBUG,
         _ => Level::TRACE,
     };
+    // TODO: no module name
     let subscriber = tracing_subscriber::FmtSubscriber::builder()
         .with_writer(std::io::stderr)
         .with_max_level(lv)
@@ -77,19 +75,16 @@ fn main_impl() -> error::Result<()> {
 
     let mut rt = Runtime::builder();
     rt.with_replacements(args.replace);
-    if args.input.is_empty() {
-        rt.load_input(INDICES).unwrap();
+    let input = if args.input.is_empty() {
+        &[InputFrom::Indices, InputFrom::Substitutions]
     } else {
-        for path in args.input.iter() {
-            rt.load_input_file(path)?;
-        }
+        &*args.input
+    };
+    for inp in input {
+        rt.load_input_from(inp)?;
     }
-    if args.substitution.is_empty() {
-        rt.load_substitutions(SUBSTITUTIONS).unwrap();
-    } else {
-        for path in args.substitution.iter() {
-            rt.load_substitutions_file(path)?;
-        }
+    if !args.substitution.is_empty() {
+        warn!("'--substitution' is deprecated, use '--input' instead");
     }
 
     match args.cmd {
@@ -122,7 +117,7 @@ fn main_impl() -> error::Result<()> {
             source,
         } => {
             if yes {
-                warn!("'-y/--yes' is deprecated, use '-w/--write' instead");
+                warn!("'-y/--yes' is deprecated, use '--write' instead");
             }
             let rt = rt.build();
             let mut context = CheckerContext {

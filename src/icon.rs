@@ -10,6 +10,18 @@ pub(crate) fn parse_codepoint(s: &str) -> error::Result<char> {
     char::from_u32(v).ok_or_else(|| error::InvalidCodepoint.build())
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Input {
+    #[serde(with = "index")]
+    Index(Indices),
+    #[serde(with = "substitution")]
+    Substitution(Substitutions),
+}
+
+pub type Indices = Vec<Icon>;
+pub type Substitutions = Vec<Substitution>;
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Icon {
     pub name: String,
@@ -26,79 +38,10 @@ struct IconInfo {
     obsolete: bool,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Indices {
-    // Reserved for future compatibility
-    pub metadata: Version,
-    pub icons: Vec<Icon>,
-}
-
-#[derive(Debug, Deserialize, Clone, Eq, PartialEq, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Version {
-    V1,
-}
-
-impl<'de> Deserialize<'de> for Indices {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct DbVisitor;
-        impl<'de> Visitor<'de> for DbVisitor {
-            type Value = Indices;
-
-            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.write_str("Indices")
-            }
-
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: serde::de::MapAccess<'de>,
-            {
-                let mut metadata = None::<Version>;
-                let mut icons = Vec::default();
-                while let Some(k) = map.next_key::<&str>()? {
-                    if k == "METADATA" {
-                        metadata = Some(map.next_value()?);
-                    } else {
-                        let info = map.next_value::<IconInfo>()?;
-                        icons.push(Icon {
-                            name: k.to_owned(),
-                            codepoint: info.codepoint,
-                            obsolete: info.obsolete,
-                        });
-                    }
-                }
-                Ok(Indices {
-                    metadata: metadata
-                        .ok_or_else(|| serde::de::Error::missing_field("METADATA"))?,
-                    icons,
-                })
-            }
-        }
-        deserializer.deserialize_map(DbVisitor)
-    }
-}
-
-impl Serialize for Indices {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut map = serializer.serialize_map(Some(self.icons.len() + 1))?;
-        map.serialize_entry("METADATA", &self.metadata)?;
-        for i in self.icons.iter() {
-            map.serialize_entry(
-                &i.name,
-                &IconInfo {
-                    codepoint: i.codepoint,
-                    obsolete: i.obsolete,
-                },
-            )?;
-        }
-        map.end()
-    }
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Substitution {
+    pub from: String,
+    pub to: Vec<String>,
 }
 
 mod codepoint {
@@ -126,10 +69,106 @@ mod codepoint {
         deserializer.deserialize_str(CodepointVisitor)
     }
 
-    pub(crate) fn serialize<S>(this: &char, serializer: S) -> Result<S::Ok, S::Error>
+    pub(crate) fn serialize<S>(codepoint: &char, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&format!("{:x}", *this as u32))
+        serializer.serialize_str(&format!("{:x}", *codepoint as u32))
+    }
+}
+
+mod index {
+    use super::*;
+
+    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<Indices, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct DbVisitor;
+        impl<'de> Visitor<'de> for DbVisitor {
+            type Value = Indices;
+
+            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.write_str("Indices")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                let mut indices = Indices::default();
+                while let Some(name) = map.next_key::<String>()? {
+                    let info = map.next_value::<IconInfo>()?;
+                    indices.push(Icon {
+                        name,
+                        codepoint: info.codepoint,
+                        obsolete: info.obsolete,
+                    });
+                }
+                Ok(indices)
+            }
+        }
+        deserializer.deserialize_map(DbVisitor)
+    }
+
+    pub(super) fn serialize<S>(indices: &Indices, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(indices.len()))?;
+        for icon in indices.iter() {
+            map.serialize_entry(
+                &icon.name,
+                &IconInfo {
+                    codepoint: icon.codepoint,
+                    obsolete: icon.obsolete,
+                },
+            )?;
+        }
+        map.end()
+    }
+}
+
+mod substitution {
+    use super::*;
+
+    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<Substitutions, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct DbVisitor;
+        impl<'de> Visitor<'de> for DbVisitor {
+            type Value = Substitutions;
+
+            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                f.write_str("Indices")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::MapAccess<'de>,
+            {
+                let mut subs = Substitutions::default();
+                while let Some(from) = map.next_key::<String>()? {
+                    subs.push(Substitution {
+                        from,
+                        to: map.next_value()?,
+                    });
+                }
+                Ok(subs)
+            }
+        }
+        deserializer.deserialize_map(DbVisitor)
+    }
+
+    pub(super) fn serialize<S>(subs: &Substitutions, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut map = serializer.serialize_map(Some(subs.len()))?;
+        for sub in subs.iter() {
+            map.serialize_entry(&sub.from, &sub.to)?;
+        }
+        map.end()
     }
 }
