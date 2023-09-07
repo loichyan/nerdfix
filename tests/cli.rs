@@ -42,12 +42,12 @@ fn check() {
 }
 
 #[test]
-fn check_with_input() {
+fn check_with_indices() {
     Command::cargo_bin("nerdfix")
         .unwrap()
+        .arg("check")
         .arg("--input")
         .arg("tests/test-index.json")
-        .arg("check")
         .arg("tests/test-data.txt")
         .assert_stripped()
         .success()
@@ -105,7 +105,9 @@ fn fix_with_substitutions() {
         .arg("fix")
         .arg("--select-first")
         .arg("--write")
-        .arg("--substitution")
+        .arg("--input")
+        .arg("INDICES")
+        .arg("--input")
         .arg("tests/test-substitution.json")
         .arg("tests/test-data.txt:/dev/null")
         .assert_stripped()

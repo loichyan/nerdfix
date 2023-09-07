@@ -1,3 +1,5 @@
 {
-  "mdi-file_document_box": ["md-file_document"]
+  "substitution": {
+    "mdi-file_document_box": ["md-file_document"]
+  }
 }

@@ -1,8 +1,8 @@
 use crate::{
     autocomplete::Autocompleter,
-    cli::{OutputFormat, Replacement, UserInput},
+    cli::{InputFrom, OutputFormat, Replacement, UserInput},
     error,
-    icon::{Icon, Indices},
+    icon::{Icon, Input},
     util::NGramSearcherExt,
 };
 use codespan_reporting::{
@@ -30,6 +30,9 @@ const WARP: f32 = 3.0;
 const THRESHOLD: f32 = 0.7;
 const MAX_CHOICES: usize = 4;
 
+static INDICES: &str = include_str!("./index.json");
+static SUBSTITUTIONS: &str = include_str!("./substitution.json");
+
 pub type NGram = noodler::NGram<(String, usize)>;
 
 #[derive(Default)]
@@ -48,10 +51,7 @@ impl Runtime {
 
     pub fn generate_indices(&self, path: &Path) -> error::Result<()> {
         info!("Save indices to '{}'", path.display());
-        let indices = Indices {
-            metadata: crate::icon::Version::V1,
-            icons: self.icons.values().cloned().collect(),
-        };
+        let indices = Input::Index(self.icons.values().cloned().collect());
         let content = serde_json::to_string(&indices).unwrap();
         std::fs::write(path, content)?;
         Ok(())
@@ -317,31 +317,49 @@ pub struct RuntimeBuilder {
 }
 
 impl RuntimeBuilder {
-    pub fn load_input_file(&mut self, path: &Path) -> error::Result<()> {
-        info!("Load input from '{}'", path.display());
-        let content = std::fs::read_to_string(path)?;
-        self.load_input(&content)?;
+    pub fn load_input_from(&mut self, input: &InputFrom) -> error::Result<()> {
+        let content;
+        let content = match input {
+            InputFrom::Stdin => {
+                info!("Load input from STDIN");
+                content = std::io::read_to_string(std::io::stdin())?;
+                &content
+            }
+            InputFrom::Indices => {
+                info!("Load input from INDICES");
+                INDICES
+            }
+            InputFrom::Substitutions => {
+                info!("Load input from SUBSTITUTIONS");
+                SUBSTITUTIONS
+            }
+            InputFrom::File(path) => {
+                info!("Load input from '{}'", path.display());
+                content = std::fs::read_to_string(path)?;
+                &content
+            }
+        };
+        self.load_input(content)?;
         Ok(())
     }
 
     pub fn load_input(&mut self, content: &str) -> error::Result<()> {
-        for icon in crate::parser::parse(content)? {
-            self.add_icon(icon);
-        }
-        Ok(())
-    }
-
-    pub fn load_substitutions_file(&mut self, path: &Path) -> error::Result<()> {
-        info!("Load substitutions list from '{}'", path.display());
-        let content = std::fs::read_to_string(path)?;
-        self.load_substitutions(&content)?;
-        Ok(())
-    }
-
-    pub fn load_substitutions(&mut self, content: &str) -> error::Result<()> {
-        let content = serde_json::from_str::<HashMap<String, Vec<String>>>(content)?;
-        for (k, v) in content {
-            self.substitutions.entry(k).or_default().extend(v);
+        match crate::parser::parse(content)? {
+            Input::Index(indices) => {
+                for icon in indices {
+                    if !self.icons.contains_key(&icon.name) {
+                        self.icons.insert(icon.name.clone(), icon);
+                    }
+                }
+            }
+            Input::Substitution(subs) => {
+                for sub in subs {
+                    self.substitutions
+                        .entry(sub.from)
+                        .or_default()
+                        .extend(sub.to);
+                }
+            }
         }
         Ok(())
     }
@@ -361,12 +379,6 @@ impl RuntimeBuilder {
             substitutions: self.substitutions,
             replacements: self.replacements.unwrap_or_default(),
             ..Default::default()
-        }
-    }
-
-    fn add_icon(&mut self, icon: Icon) {
-        if !self.icons.contains_key(&icon.name) {
-            self.icons.insert(icon.name.clone(), icon);
         }
     }
 }
