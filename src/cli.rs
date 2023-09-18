@@ -1,6 +1,6 @@
 //! Command line arguments parser.
 
-use crate::{error, shadow};
+use crate::{error, icon::Substitution, shadow};
 use clap::{Parser, Subcommand, ValueEnum};
 use core::fmt;
 use shadow_rs::formatcp;
@@ -9,29 +9,24 @@ use thisctx::IntoError;
 
 const V_PATH: &str = "PATH";
 const V_SOURCE: &str = "SOURCE";
-const V_CLASSES: &str = "FROM,TO";
+const V_SUBSTITUTION: &str = "SUBSTITUTION";
 const V_FORMAT: &str = "FORMAT";
 const INDEX_REV: &str = include_str!("index-rev");
 const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, INDEX_REV);
 
+// TODO: describe implicit behaviors
 #[derive(Debug, Parser)]
 #[command(author, version, long_version = CLAP_LONG_VERSION)]
 pub struct Cli {
     /// Path(s) to load the icons cheat sheet, indices or substitutions.
     #[arg(short, long, global = true, value_name = V_PATH)]
-    pub input: Vec<InputFrom>,
-    /// Replace the prefix of an icon name with another.
+    pub input: Vec<IoPath>,
+    /// Perform an exact/prefix substitution.
     ///
-    /// For example, use `--replace=mdi,md` to replace all `mdi*`
-    /// icons with the same ones in `md*`.
-    #[arg(long, global = true, value_name = V_CLASSES)]
-    pub replace: Vec<Replacement>,
-    /// [deprecated] Load predfined substitutions lists used in autofix.
-    ///
-    /// A substitutions list is a json object whose key is icon name and whose
-    /// value is a list of icons used to replace the icon.
-    #[arg(long, global = true, value_name = V_PATH)]
-    pub substitution: Vec<PathBuf>,
+    /// For example, use `--sub prefix:mdi-/md-` to replace all `mdi-*`
+    /// icons with the same ones in `md-*`.
+    #[arg(long, global = true, value_name = V_SUBSTITUTION)]
+    pub sub: Vec<Substitution>,
     /// Decrease log level.
     #[arg(
         short,
@@ -52,11 +47,20 @@ pub struct Cli {
     pub verbose: u8,
     #[command(subcommand)]
     pub cmd: Command,
+    /// [deprecated] Use `--input` instead.
+    ///
+    /// A substitutions list is a json object whose key is icon name and whose
+    /// value is a list of icons used to replace the icon.
+    #[arg(long, global = true, value_name = V_PATH)]
+    pub substitution: Vec<PathBuf>,
+    /// [deprecated] Use `--sub prefix:` instead.
+    #[arg(long, global = true, value_name = V_SUBSTITUTION)]
+    pub replace: Vec<Substitution>,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// [deprecated] Cache parsed icons.
+    /// [deprecated] Use `index` instead.
     Cache {
         /// Path to save the cached content.
         #[arg(short, long, value_name = V_PATH,)]
@@ -82,7 +86,7 @@ pub enum Command {
     },
     /// Fix obsolete icons interactively.
     Fix {
-        /// [deprecated] Write content without confirmation.
+        /// [deprecated] Use `--write` instead.
         #[arg(short, long)]
         yes: bool,
         /// Write content without confirmation.
@@ -96,8 +100,8 @@ pub enum Command {
         recursive: bool,
         /// Path tuple(s) of files to read from and write to.
         ///
-        /// Each tuple is an input path followed by an optional output path, e.g.
-        /// `/input/as/ouput /read/from:/write/to`.
+        /// Each tuple is an input path followed by an optional output path,
+        /// e.g. `nerdfix fix /input/as/ouput /read/from:/write/to`.
         #[arg(value_name = V_SOURCE)]
         source: Vec<Source>,
     },
@@ -135,44 +139,21 @@ impl FromStr for UserInput {
     }
 }
 
+// TODO: support more arguments
 #[derive(Clone, Debug)]
-pub enum InputFrom {
-    Stdin,
-    Indices,
-    Substitutions,
+pub enum IoPath {
+    Stdio,
     File(PathBuf),
 }
 
-impl FromStr for InputFrom {
+impl FromStr for IoPath {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "-" | "STDIN" => Ok(Self::Stdin),
-            "INDICES" => Ok(Self::Indices),
-            "SUBSTITUTIONS" => Ok(Self::Substitutions),
+            "-" => Ok(Self::Stdio),
             _ => Ok(Self::File(s.into())),
         }
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Replacement {
-    pub from: String,
-    pub to: String,
-}
-
-impl FromStr for Replacement {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (from, to) = s
-            .split_once(',')
-            .ok_or("the input should be two classes separated by a comma")?;
-        Ok(Self {
-            from: from.to_owned(),
-            to: to.to_owned(),
-        })
     }
 }
 

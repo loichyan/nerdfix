@@ -10,7 +10,7 @@ note: Found obsolete icon U+F752
         3. 󰉔 U+F0254 md-folder_multiple_image
         4. 󱑾 U+F147E md-folder_multiple_plus
 
-# Autofix with replacement '󰉓'
+# Autofix with substitution '󰉓'
 note: Found obsolete icon U+F719
   ┌─ tests/test-data.txt:4:26
   │
@@ -47,7 +47,7 @@ note: Found obsolete icon U+F7A1
          1. 󰊢 U+F02A2 md-git
          2.  U+0E65D seti-git
 
-# Autofix with replacement '󰊢'
+# Autofix with substitution '󰊢'
 note: Found obsolete icon U+F9E8
    ┌─ tests/test-data.txt:14:12
    │
@@ -57,7 +57,7 @@ note: Found obsolete icon U+F9E8
    = You could replace it with:
          1. 󰓩 U+F04E9 md-tab
 
-# Autofix with replacement '󰓩'
+# Autofix with substitution '󰓩'
 note: Found obsolete icon U+FC0A
    ┌─ tests/test-data.txt:17:24
    │
@@ -70,7 +70,7 @@ note: Found obsolete icon U+FC0A
          3. 󱇏 U+F11CF md-alert_rhombus_outline
          4. 󱓝 U+F14DD md-rhombus_split_outline
 
-# Autofix with replacement '󰜌'
+# Autofix with substitution '󰜌'
 note: Found obsolete icon U+F554
    ┌─ tests/test-data.txt:20:26
    │
@@ -83,4 +83,4 @@ note: Found obsolete icon U+F554
          3. 󰦺 U+F09BA md-arrow_bottom_right_thick
          4. 󱦰 U+F19B0 md-arrow_right_thin
 
-# Autofix with replacement '󰁕'
+# Autofix with substitution '󰁕'

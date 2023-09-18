@@ -1,8 +1,8 @@
 use crate::{
     autocomplete::Autocompleter,
-    cli::{InputFrom, OutputFormat, Replacement, UserInput},
+    cli::{IoPath, OutputFormat, UserInput},
     error,
-    icon::{Icon, Input},
+    icon::{Icon, Input, Substitution, SubstitutionType, Substitutions},
     util::NGramSearcherExt,
 };
 use codespan_reporting::{
@@ -30,9 +30,6 @@ const WARP: f32 = 3.0;
 const THRESHOLD: f32 = 0.7;
 const MAX_CHOICES: usize = 4;
 
-static INDICES: &str = include_str!("./index.json");
-static SUBSTITUTIONS: &str = include_str!("./substitution.json");
-
 pub type NGram = noodler::NGram<(String, usize)>;
 
 #[derive(Default)]
@@ -40,8 +37,71 @@ pub struct Runtime {
     icons: Rc<IndexMap<String, Icon>>,
     index: OnceCell<HashMap<char, usize>>,
     corpus: OnceCell<Rc<NGram>>,
-    substitutions: HashMap<String, Vec<String>>,
-    replacements: Vec<Replacement>,
+    exact_sub: HashMap<String, String>,
+    prefix_sub: Vec<Substitution>,
+}
+
+#[derive(Default)]
+pub struct RuntimeBuilder {
+    icons: IndexMap<String, Icon>,
+    exact_sub: HashMap<String, String>,
+    prefix_sub: Vec<Substitution>,
+}
+
+impl RuntimeBuilder {
+    pub fn load_input_from(&mut self, input: &IoPath) -> error::Result<()> {
+        let content;
+        let content = match input {
+            IoPath::Stdio => {
+                info!("Load input from STDIN");
+                content = std::io::read_to_string(std::io::stdin())?;
+                &content
+            }
+            IoPath::File(path) => {
+                info!("Load input from '{}'", path.display());
+                content = std::fs::read_to_string(path)?;
+                &content
+            }
+        };
+        self.load_input(content)?;
+        Ok(())
+    }
+
+    pub fn load_input(&mut self, content: &str) -> error::Result<()> {
+        let input = crate::parser::parse(content)?;
+        for icon in input.icons {
+            if !self.icons.contains_key(&icon.name) {
+                self.icons.insert(icon.name.clone(), icon);
+            }
+        }
+        self.with_substitutions(input.substitutions);
+        Ok(())
+    }
+
+    pub fn with_substitutions(&mut self, substitutions: Substitutions) {
+        for sub in substitutions {
+            match sub.ty {
+                SubstitutionType::Exact => {
+                    self.exact_sub.insert(sub.from, sub.to);
+                }
+                SubstitutionType::Prefix => self.prefix_sub.push(sub),
+            }
+        }
+    }
+
+    pub fn build(self) -> Runtime {
+        let Self {
+            icons,
+            exact_sub,
+            prefix_sub,
+        } = self;
+        Runtime {
+            icons: Rc::new(icons),
+            prefix_sub,
+            exact_sub,
+            ..Default::default()
+        }
+    }
 }
 
 impl Runtime {
@@ -51,7 +111,19 @@ impl Runtime {
 
     pub fn generate_indices(&self, path: &Path) -> error::Result<()> {
         info!("Save indices to '{}'", path.display());
-        let indices = Input::Index(self.icons.values().cloned().collect());
+        let indices = Input {
+            icons: self.icons.values().cloned().collect(),
+            substitutions: self
+                .exact_sub
+                .iter()
+                .map(|(k, v)| Substitution {
+                    ty: SubstitutionType::Exact,
+                    from: k.clone(),
+                    to: v.clone(),
+                })
+                .chain(self.prefix_sub.iter().cloned())
+                .collect(),
+        };
         let content = serde_json::to_string(&indices).unwrap();
         std::fs::write(path, content)?;
         Ok(())
@@ -119,9 +191,6 @@ impl Runtime {
                     } else if let Some(new) = self.get_substitutions(icon).next() {
                         msginfo!("# Autofix with substitution '{}'", new.codepoint);
                         ch = new.codepoint;
-                    } else if let Some(new) = self.get_replacements(icon).next() {
-                        msginfo!("# Autofix with replacement '{}'", new.codepoint);
-                        ch = new.codepoint;
                     } else if context.select_first {
                         if let Some(&first) = candidates.first() {
                             msginfo!("# Autofix with the first suggestion '{}'", first.codepoint);
@@ -167,18 +236,15 @@ impl Runtime {
             .collect()
     }
 
-    fn get_replacements<'a>(&'a self, icon: &'a Icon) -> impl 'a + Iterator<Item = &'a Icon> {
-        self.replacements.iter().filter_map(|rep| {
-            let name = icon.name.strip_prefix(&rep.from)?;
-            self.icons.get(&format!("{}{name}", rep.to))
-        })
-    }
-
     fn get_substitutions<'a>(&'a self, icon: &'a Icon) -> impl 'a + Iterator<Item = &'a Icon> {
-        self.substitutions
+        self.exact_sub
             .get(&icon.name)
             .into_iter()
-            .flat_map(|substitutions| substitutions.iter().filter_map(|name| self.icons.get(name)))
+            .filter_map(|name| self.icons.get(name))
+            .chain(self.prefix_sub.iter().filter_map(|rep| {
+                let name = icon.name.strip_prefix(&rep.from)?;
+                self.icons.get(&format!("{}{name}", rep.to))
+            }))
     }
 
     fn diagnostic_notes(&self, candidates: &[&Icon]) -> error::Result<Vec<String>> {
@@ -306,80 +372,6 @@ impl Runtime {
                     ),
             )
         })
-    }
-}
-
-#[derive(Default)]
-pub struct RuntimeBuilder {
-    icons: IndexMap<String, Icon>,
-    substitutions: HashMap<String, Vec<String>>,
-    replacements: Option<Vec<Replacement>>,
-}
-
-impl RuntimeBuilder {
-    pub fn load_input_from(&mut self, input: &InputFrom) -> error::Result<()> {
-        let content;
-        let content = match input {
-            InputFrom::Stdin => {
-                info!("Load input from STDIN");
-                content = std::io::read_to_string(std::io::stdin())?;
-                &content
-            }
-            InputFrom::Indices => {
-                info!("Load input from INDICES");
-                INDICES
-            }
-            InputFrom::Substitutions => {
-                info!("Load input from SUBSTITUTIONS");
-                SUBSTITUTIONS
-            }
-            InputFrom::File(path) => {
-                info!("Load input from '{}'", path.display());
-                content = std::fs::read_to_string(path)?;
-                &content
-            }
-        };
-        self.load_input(content)?;
-        Ok(())
-    }
-
-    pub fn load_input(&mut self, content: &str) -> error::Result<()> {
-        match crate::parser::parse(content)? {
-            Input::Index(indices) => {
-                for icon in indices {
-                    if !self.icons.contains_key(&icon.name) {
-                        self.icons.insert(icon.name.clone(), icon);
-                    }
-                }
-            }
-            Input::Substitution(subs) => {
-                for sub in subs {
-                    self.substitutions
-                        .entry(sub.from)
-                        .or_default()
-                        .extend(sub.to);
-                }
-            }
-        }
-        Ok(())
-    }
-
-    pub fn with_replacements(&mut self, replacements: Vec<Replacement>) {
-        self.replacements = Some(replacements);
-    }
-
-    pub fn build(mut self) -> Runtime {
-        // Ensure the same substitution is selected each time.
-        self.substitutions.values_mut().for_each(|v| {
-            v.sort();
-            v.dedup();
-        });
-        Runtime {
-            icons: Rc::new(self.icons),
-            substitutions: self.substitutions,
-            replacements: self.replacements.unwrap_or_default(),
-            ..Default::default()
-        }
     }
 }
 
