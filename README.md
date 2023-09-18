@@ -126,8 +126,11 @@ search.
 `nerdfix` provides some features to automatically patch obsolete icons:
 
 - The last user input is picked if an icon appears twice.
-- Use `fix --replace FROM,TO` to replace the prefix of an icon name with
-  another, e.g. `mdi-tab` is replaced with `md-tab` when `--replace mdi-,md-` is
+- Use `--sub FROM/TO` (or `--sub exact:FROM/TO` for full syntax) to replace one
+  icon with another, e.g. `mdi-tab` is replaced with `md-tab` when
+  `--sub mdi-tab/md-tab` is specified.
+- Use `--sub prefix:FROM/TO` to replace the prefix of an icon name with another,
+  e.g. `mdi-tab` is replaced with `md-tab` when `--sub prefix:mdi-/md-` is
   specified.
 
 ### Structured output

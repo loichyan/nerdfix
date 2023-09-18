@@ -1,6 +1,6 @@
 {
-  "index": {
-    "md-file_document": { "codepoint": "f0219" },
-    "mdi-file_document_box": { "codepoint": "0f719", "obsolete": true }
-  }
+  "icons": [
+    { "name": "md-file_document", "codepoint": "f0219" },
+    { "name": "mdi-file_document_box", "codepoint": "0f719", "obsolete": true }
+  ]
 }

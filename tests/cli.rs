@@ -83,34 +83,34 @@ fn fix() {
 
 #[cfg(unix)]
 #[test]
-fn fix_with_replacements() {
+fn fix_with_exact_subs() {
     Command::cargo_bin("nerdfix")
         .unwrap()
         .arg("fix")
         .arg("--select-first")
         .arg("--write")
-        .arg("--replace")
-        .arg("mdi-,md-")
+        .arg("--input")
+        .arg("tests/test-substitution.json")
+        .arg("--input")
+        .arg("src/index.json")
         .arg("tests/test-data.txt:/dev/null")
         .assert_stripped()
         .success()
-        .stdout(cmp_or_override("fix_with_replacements"));
+        .stdout(cmp_or_override("fix_with_exact_subs"));
 }
 
 #[cfg(unix)]
 #[test]
-fn fix_with_substitutions() {
+fn fix_with_prefix_subs() {
     Command::cargo_bin("nerdfix")
         .unwrap()
         .arg("fix")
         .arg("--select-first")
         .arg("--write")
-        .arg("--input")
-        .arg("INDICES")
-        .arg("--input")
-        .arg("tests/test-substitution.json")
+        .arg("--sub")
+        .arg("prefix:mdi-/md-")
         .arg("tests/test-data.txt:/dev/null")
         .assert_stripped()
         .success()
-        .stdout(cmp_or_override("fix_with_substitutions"));
+        .stdout(cmp_or_override("fix_with_prefix_subs"));
 }

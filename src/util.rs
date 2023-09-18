@@ -68,7 +68,7 @@ impl From<crate::error::Error> for ErrorWithSource {
     }
 }
 
-#[extend::ext(pub, name = NGramSearcherExt)]
+#[extend::ext(pub(crate), name = NGramSearcherExt)]
 impl<'i, 'a, T> NGramSearcher<'i, 'a, T> {
     fn exec_sorted_stable(self) -> <Vec<(&'i T, f32)> as IntoIterator>::IntoIter
     where
@@ -101,4 +101,11 @@ impl<T> error::Result<T> {
             }
         }
     }
+}
+
+#[cfg(test)]
+macro_rules! jsonstr {
+    ($tt:tt) => {
+        stringify!($tt)
+    };
 }

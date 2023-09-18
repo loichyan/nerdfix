@@ -10,11 +10,14 @@ use thisctx::WithContext;
 
 pub fn parse(s: &str) -> error::Result<Input> {
     let s = s.trim_start();
-    if s.starts_with('{') {
-        Ok(serde_json::from_str::<Input>(s)?)
+    Ok(if s.starts_with('{') {
+        serde_json::from_str::<Input>(s)?
     } else {
-        parse_cheat_sheet(s).map(Input::Index)
-    }
+        Input {
+            icons: parse_cheat_sheet(s)?,
+            ..Default::default()
+        }
+    })
 }
 
 fn parse_cheat_sheet(s: &str) -> error::Result<Vec<Icon>> {
@@ -58,14 +61,14 @@ fn parse_cheat_sheet(s: &str) -> error::Result<Vec<Icon>> {
 mod tests {
     use super::*;
 
-    const INDEX: &str = r#"{
-    "index": {
-        "cod-account": { "codepoint": "eb99" },
-        "cod-activate_breakpoints": { "codepoint": "ea97" },
-        "mdi-access_point": { "codepoint": "f501", "obsolete": true },
-        "mdi-access_point_network": { "codepoint": "f502", "obsolete": true }
-    }
-}"#;
+    const INDEX: &str = jsonstr!({
+        "icons": [
+            { "name": "cod-account", "codepoint": "eb99" },
+            { "name": "cod-activate_breakpoints", "codepoint": "ea97" },
+            { "name": "mdi-access_point", "codepoint": "f501", "obsolete": true },
+            { "name": "mdi-access_point_network", "codepoint": "f502", "obsolete": true }
+        ]
+    });
 
     // Author: Ryan L McIntyre
     // License: MIT
@@ -82,24 +85,30 @@ const glyphs = {
     #[test]
     fn parse_index() {
         let icons = super::parse(INDEX).unwrap();
-        let expected = Input::Index(vec![
-            icon!("cod-account", 0xeb99),
-            icon!("cod-activate_breakpoints", 0xea97),
-            icon!("mdi-access_point", 0xf501, true),
-            icon!("mdi-access_point_network", 0xf502, true),
-        ]);
+        let expected = Input {
+            icons: vec![
+                icon!("cod-account", 0xeb99),
+                icon!("cod-activate_breakpoints", 0xea97),
+                icon!("mdi-access_point", 0xf501, true),
+                icon!("mdi-access_point_network", 0xf502, true),
+            ],
+            ..Default::default()
+        };
         assert_eq!(icons, expected);
     }
 
     #[test]
     fn parse_cheat_sheet() {
         let icons = super::parse(CHEAT_SHEET).unwrap();
-        let expected = Input::Index(vec![
-            icon!("cod-account", 0xeb99),
-            icon!("cod-activate_breakpoints", 0xea97),
-            icon!("mdi-access_point", 0xf501, true),
-            icon!("mdi-access_point_network", 0xf502, true),
-        ]);
+        let expected = Input {
+            icons: vec![
+                icon!("cod-account", 0xeb99),
+                icon!("cod-activate_breakpoints", 0xea97),
+                icon!("mdi-access_point", 0xf501, true),
+                icon!("mdi-access_point_network", 0xf502, true),
+            ],
+            ..Default::default()
+        };
         assert_eq!(icons, expected);
     }
 }

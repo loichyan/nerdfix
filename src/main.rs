@@ -11,13 +11,16 @@ mod runtime;
 shadow_rs::shadow!(shadow);
 
 use clap::Parser;
-use cli::{Command, InputFrom, Source};
+use cli::{Command, Source};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
 use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
+
+static INDICES: &str = include_str!("./index.json");
+static SUBSTITUTIONS: &str = include_str!("./substitution.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = Source>,
@@ -32,7 +35,7 @@ fn walk<'a>(
                 .flat_map(|Source(input, output)| {
                     if let Some(output) = output {
                         warn!(
-                            "Output path is ignored when '--recursive': {}",
+                            "Output path is ignored when `--recursive`: {}",
                             output.display()
                         );
                     }
@@ -74,21 +77,17 @@ fn main_impl() -> error::Result<()> {
     tracing::subscriber::set_global_default(subscriber).context(error::Any)?;
 
     let mut rt = Runtime::builder();
-    rt.with_replacements(args.replace);
-    let input = if args.input.is_empty() {
-        &[InputFrom::Indices, InputFrom::Substitutions]
-    } else {
-        &*args.input
-    };
-    for inp in input {
-        rt.load_input_from(inp)?;
+    if args.input.is_empty() {
+        rt.load_input(INDICES).unwrap();
+        rt.load_input(SUBSTITUTIONS).unwrap();
     }
-    if !args.substitution.is_empty() {
-        warn!("'--substitution' is deprecated, use '--input' instead");
+    for path in args.input.iter() {
+        rt.load_input_from(path)?;
     }
+    rt.with_substitutions(args.sub);
 
     match args.cmd {
-        Command::Cache { .. } => warn!("'cache' is deprecated, use 'index' instead"),
+        Command::Cache { .. } => warn!("`cache` is deprecated, use `index` instead"),
         Command::Index { output } => rt.build().generate_indices(&output)?,
         Command::Check {
             format,
@@ -117,7 +116,7 @@ fn main_impl() -> error::Result<()> {
             source,
         } => {
             if yes {
-                warn!("'-y/--yes' is deprecated, use '--write' instead");
+                warn!("`-y/--yes` is deprecated, use `--write` instead");
             }
             let rt = rt.build();
             let mut context = CheckerContext {
