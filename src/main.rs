@@ -11,7 +11,8 @@ mod runtime;
 shadow_rs::shadow!(shadow);
 
 use clap::Parser;
-use cli::{Command, Source};
+use cli::{Command, IoPath, Source};
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
@@ -34,13 +35,16 @@ fn walk<'a>(
                 .into_iter()
                 .flat_map(|Source(input, output)| {
                     if let Some(output) = output {
-                        warn!(
-                            "Output path is ignored when `--recursive`: {}",
-                            output.display()
-                        );
+                        warn!("Output path is ignored when `--recursive`: {}", output);
                     }
-
-                    WalkDir::new(input)
+                    if let IoPath::Path(p) = input {
+                        Some(WalkDir::new(p))
+                    } else {
+                        warn!("STDIO path is ignored when `--recursive`");
+                        None
+                    }
+                    .into_iter()
+                    .flat_map(|w| w.into_iter())
                 })
                 .filter_map(|entry| {
                     tryb!({
@@ -53,7 +57,7 @@ fn walk<'a>(
                     })
                     .transpose()
                 })
-                .map(|e| e.map(|path| Source(path, None))),
+                .map(|e| e.map(|path| Source(IoPath::Path(path), None))),
         )
     }
 }
@@ -81,8 +85,8 @@ fn main_impl() -> error::Result<()> {
         rt.load_input(INDICES).unwrap();
         rt.load_input(SUBSTITUTIONS).unwrap();
     }
-    for path in args.input.iter() {
-        rt.load_input_from(path)?;
+    for input in args.input.iter() {
+        rt.load_input_from(input)?;
     }
     rt.with_substitutions(args.sub);
 
@@ -97,6 +101,7 @@ fn main_impl() -> error::Result<()> {
             let rt = rt.build();
             let mut context = CheckerContext {
                 format,
+                writer: StandardStream::stdout(ColorChoice::Always),
                 ..Default::default()
             };
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
@@ -140,8 +145,8 @@ fn main_impl() -> error::Result<()> {
                                 _ => {}
                             }
                         }
-                        info!("Write output to '{}'", output.display());
-                        std::fs::write(output, patched)?;
+                        info!("Write output to '{}'", output);
+                        output.write_str(&patched)?;
                     }
                     Ok(())
                 })

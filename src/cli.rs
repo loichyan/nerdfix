@@ -4,7 +4,7 @@ use crate::{error, icon::Substitution, shadow};
 use clap::{Parser, Subcommand, ValueEnum};
 use core::fmt;
 use shadow_rs::formatcp;
-use std::{path::PathBuf, str::FromStr};
+use std::{io, path::PathBuf, str::FromStr};
 use thisctx::IntoError;
 
 const V_PATH: &str = "PATH";
@@ -52,7 +52,7 @@ pub struct Cli {
     /// A substitutions list is a json object whose key is icon name and whose
     /// value is a list of icons used to replace the icon.
     #[arg(long, global = true, value_name = V_PATH)]
-    pub substitution: Vec<PathBuf>,
+    pub substitution: Vec<IoPath>,
     /// [deprecated] Use `--sub prefix:` instead.
     #[arg(long, global = true, value_name = V_SUBSTITUTION)]
     pub replace: Vec<Substitution>,
@@ -64,13 +64,13 @@ pub enum Command {
     Cache {
         /// Path to save the cached content.
         #[arg(short, long, value_name = V_PATH,)]
-        output: PathBuf,
+        output: IoPath,
     },
     /// Generate icons indices.
     Index {
         /// Path to save the output.
         #[arg(short, long, value_name = V_PATH)]
-        output: PathBuf,
+        output: IoPath,
     },
     /// Check for obsolete icons.
     Check {
@@ -82,7 +82,7 @@ pub enum Command {
         recursive: bool,
         /// Path(s) of files to check.
         #[arg(value_name = V_PATH)]
-        source: Vec<PathBuf>,
+        source: Vec<IoPath>,
     },
     /// Fix obsolete icons interactively.
     Fix {
@@ -139,11 +139,10 @@ impl FromStr for UserInput {
     }
 }
 
-// TODO: support more arguments
 #[derive(Clone, Debug)]
 pub enum IoPath {
     Stdio,
-    File(PathBuf),
+    Path(PathBuf),
 }
 
 impl FromStr for IoPath {
@@ -152,7 +151,33 @@ impl FromStr for IoPath {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "-" => Ok(Self::Stdio),
-            _ => Ok(Self::File(s.into())),
+            _ if s.is_empty() => Err("empty path is not allowed"),
+            _ => Ok(Self::Path(s.into())),
+        }
+    }
+}
+
+impl fmt::Display for IoPath {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Stdio => f.write_str("STDIO"),
+            Self::Path(path) => path.display().fmt(f),
+        }
+    }
+}
+
+impl IoPath {
+    pub fn read_to_string(&self) -> io::Result<String> {
+        match self {
+            IoPath::Stdio => io::read_to_string(io::stdin()),
+            IoPath::Path(path) => std::fs::read_to_string(path),
+        }
+    }
+
+    pub fn write_str(&self, content: &str) -> io::Result<()> {
+        match self {
+            IoPath::Stdio => io::Write::write_all(&mut io::stdout(), content.as_bytes()),
+            IoPath::Path(path) => std::fs::write(path, content),
         }
     }
 }
@@ -176,14 +201,16 @@ impl fmt::Display for OutputFormat {
 }
 
 #[derive(Clone, Debug)]
-pub struct Source(pub PathBuf, pub Option<PathBuf>);
+pub struct Source(pub IoPath, pub Option<IoPath>);
 
 impl FromStr for Source {
     type Err = &'static str;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(s.split_once(':')
-            .map(|(input, output)| Source(input.into(), Some(output.into())))
-            .unwrap_or_else(|| Source(s.into(), None)))
+        Ok(if let Some((input, output)) = s.split_once(':') {
+            Source(input.parse()?, Some(output.parse()?))
+        } else {
+            Source(s.parse()?, None)
+        })
     }
 }

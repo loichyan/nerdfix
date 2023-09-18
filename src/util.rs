@@ -19,7 +19,7 @@ macro_rules! icon {
 macro_rules! __coloredmsg {
     ($fmt:literal.$color:ident, $($args:expr,)*) => {{
         let color = nu_ansi_term::Color::$color;
-        println!(concat!("{}", $fmt, "{}"), color.prefix() $(,$args)* ,color.suffix());
+        eprintln!(concat!("{}", $fmt, "{}"), color.prefix() $(,$args)* ,color.suffix());
     }};
 }
 

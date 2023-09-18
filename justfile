@@ -13,7 +13,7 @@ update-index:
 	#!/usr/bin/env bash
 	{{_setup_bash}}
 	{{_curl}} "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/{{index_rev}}/_posts/2017-01-04-icon-cheat-sheet.md" \
-	| cargo run -- -i - index -o src/index.json
+	| cargo run -- index -i - -o src/index.json
 
 # https://github.com/loichyan/nerdfix/issues/9#issuecomment-1576944348
 substitutions-md := '{

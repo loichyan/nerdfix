@@ -18,99 +18,91 @@ impl Command {
     }
 }
 
-fn cmp_or_override(name: &str) -> impl '_ + Predicate<[u8]> {
+fn cmp_or_override(file: &str) -> impl '_ + Predicate<[u8]> {
     predicate::function(move |content| {
-        let path = format!("tests/cli/{name}.stdout");
-        let path = Path::new(&path);
+        let path = Path::new("tests/cli").join(file);
         if matches!(env::var("NERDFIX_TEST").as_deref(), Ok("overwrite")) {
             std::fs::write(path, content).unwrap();
+            true
+        } else {
+            content == std::fs::read(path).unwrap_or_default()
         }
-        let expected = std::fs::read(path).unwrap_or_default();
-        content == expected
     })
+}
+
+fn test_cli(name: &str, args: &[&str]) {
+    Command::cargo_bin("nerdfix")
+        .unwrap()
+        .args(args)
+        .assert_stripped()
+        .success()
+        .stdout(cmp_or_override(&format!("{}.stdout", name)))
+        .stderr(cmp_or_override(&format!("{}.stderr", name)));
+}
+
+macro_rules! test_cli {
+    ($name:expr, $($args:expr),* $(,)?) => {
+        test_cli($name, &[$($args,)*]);
+    };
 }
 
 #[test]
 fn check() {
-    Command::cargo_bin("nerdfix")
-        .unwrap()
-        .arg("check")
-        .arg("tests/test-data.txt")
-        .assert_stripped()
-        .success()
-        .stdout(cmp_or_override("check"));
+    test_cli!("check", "check", "tests/test-data.txt");
 }
 
 #[test]
-fn check_with_indices() {
-    Command::cargo_bin("nerdfix")
-        .unwrap()
-        .arg("check")
-        .arg("--input")
-        .arg("tests/test-index.json")
-        .arg("tests/test-data.txt")
-        .assert_stripped()
-        .success()
-        .stdout(cmp_or_override("check_with_input"));
+fn check_with_input() {
+    test_cli!(
+        "check_with_input",
+        "check",
+        "--input=tests/test-index.json",
+        "tests/test-data.txt"
+    );
 }
 
 #[test]
 fn check_json() {
-    Command::cargo_bin("nerdfix")
-        .unwrap()
-        .arg("check")
-        .arg("--format")
-        .arg("json")
-        .arg("tests/test-data.txt")
-        .assert_stripped()
-        .success()
-        .stdout(cmp_or_override("check_json"));
+    test_cli!(
+        "check_json",
+        "check",
+        "--format=json",
+        "tests/test-data.txt"
+    );
 }
 
-#[cfg(unix)]
 #[test]
 fn fix() {
-    Command::cargo_bin("nerdfix")
-        .unwrap()
-        .arg("fix")
-        .arg("--select-first")
-        .arg("--write")
-        .arg("tests/test-data.txt:/dev/null")
-        .assert_stripped()
-        .success()
-        .stdout(cmp_or_override("fix"));
+    test_cli!(
+        "fix",
+        "fix",
+        "--select-first",
+        "--write",
+        "tests/test-data.txt:-"
+    );
 }
 
-#[cfg(unix)]
 #[test]
 fn fix_with_exact_subs() {
-    Command::cargo_bin("nerdfix")
-        .unwrap()
-        .arg("fix")
-        .arg("--select-first")
-        .arg("--write")
-        .arg("--input")
-        .arg("tests/test-substitution.json")
-        .arg("--input")
-        .arg("src/index.json")
-        .arg("tests/test-data.txt:/dev/null")
-        .assert_stripped()
-        .success()
-        .stdout(cmp_or_override("fix_with_exact_subs"));
+    test_cli!(
+        "fix_with_exact_subs",
+        "fix",
+        "--select-first",
+        "--write",
+        "--input=tests/test-substitution.json",
+        "--input=src/index.json",
+        "tests/test-data.txt:-"
+    );
 }
 
-#[cfg(unix)]
 #[test]
 fn fix_with_prefix_subs() {
-    Command::cargo_bin("nerdfix")
-        .unwrap()
-        .arg("fix")
-        .arg("--select-first")
-        .arg("--write")
-        .arg("--sub")
-        .arg("prefix:mdi-/md-")
-        .arg("tests/test-data.txt:/dev/null")
-        .assert_stripped()
-        .success()
-        .stdout(cmp_or_override("fix_with_prefix_subs"));
+    test_cli!(
+        "fix_with_prefix_subs",
+        "fix",
+        "--select-first",
+        "--write",
+        "--sub=prefix:mdi-/md-",
+        "tests/test-data.txt:-"
+    );
 }

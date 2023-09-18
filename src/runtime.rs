@@ -8,19 +8,15 @@ use crate::{
 use codespan_reporting::{
     diagnostic::{Diagnostic, Label},
     files::SimpleFiles,
-    term::{self, termcolor::StandardStream},
+    term,
+    term::termcolor::{ColorChoice, StandardStream},
 };
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
 use once_cell::unsync::{Lazy, OnceCell};
 use serde::Serialize;
-use std::{
-    collections::HashMap,
-    io::Write,
-    path::{Path, PathBuf},
-    rc::Rc,
-};
+use std::{collections::HashMap, io::Write, rc::Rc};
 use thisctx::IntoError;
 use tracing::info;
 
@@ -50,20 +46,9 @@ pub struct RuntimeBuilder {
 
 impl RuntimeBuilder {
     pub fn load_input_from(&mut self, input: &IoPath) -> error::Result<()> {
-        let content;
-        let content = match input {
-            IoPath::Stdio => {
-                info!("Load input from STDIN");
-                content = std::io::read_to_string(std::io::stdin())?;
-                &content
-            }
-            IoPath::File(path) => {
-                info!("Load input from '{}'", path.display());
-                content = std::fs::read_to_string(path)?;
-                &content
-            }
-        };
-        self.load_input(content)?;
+        info!("Load input from '{}'", input);
+        let content = input.read_to_string()?;
+        self.load_input(&content)?;
         Ok(())
     }
 
@@ -109,8 +94,8 @@ impl Runtime {
         RuntimeBuilder::default()
     }
 
-    pub fn generate_indices(&self, path: &Path) -> error::Result<()> {
-        info!("Save indices to '{}'", path.display());
+    pub fn generate_indices(&self, output: &IoPath) -> error::Result<()> {
+        info!("Save indices to '{}'", output);
         let indices = Input {
             icons: self.icons.values().cloned().collect(),
             substitutions: self
@@ -125,20 +110,20 @@ impl Runtime {
                 .collect(),
         };
         let content = serde_json::to_string(&indices).unwrap();
-        std::fs::write(path, content)?;
+        output.write_str(&content)?;
         Ok(())
     }
 
     pub fn check(
         &self,
         context: &mut CheckerContext,
-        path: &Path,
+        input: &IoPath,
         should_fix: bool,
     ) -> error::Result<Option<String>> {
-        info!("Check input file '{}'", path.display());
+        info!("Check input file from '{}'", input);
         let mut result = None::<String>;
-        let content = std::fs::read_to_string(path)?;
-        let file_id = context.files.add(path.display().to_string(), content);
+        let content = input.read_to_string()?;
+        let file_id = context.files.add(input.to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
         for (start, mut ch) in content.char_indices() {
             if let Some(icon) = self
@@ -168,7 +153,7 @@ impl Runtime {
                     OutputFormat::Json => {
                         let diag = DiagOutput {
                             severity: Severity::Info,
-                            path: path.to_owned(),
+                            path: input.to_string(),
                             ty: DiagType::Obsolete {
                                 span: (start, end),
                                 name: icon.name.clone(),
@@ -179,7 +164,7 @@ impl Runtime {
                             &mut context.writer,
                             "{}",
                             serde_json::to_string(&diag).unwrap()
-                        )?
+                        )?;
                     }
                 }
                 if should_fix {
@@ -389,7 +374,7 @@ impl Default for CheckerContext {
     fn default() -> Self {
         Self {
             files: SimpleFiles::new(),
-            writer: StandardStream::stdout(term::termcolor::ColorChoice::Always),
+            writer: StandardStream::stderr(ColorChoice::Always),
             config: term::Config::default(),
             history: HashMap::default(),
             format: OutputFormat::default(),
@@ -402,7 +387,7 @@ impl Default for CheckerContext {
 #[derive(Debug, Serialize)]
 pub struct DiagOutput {
     pub severity: Severity,
-    pub path: PathBuf,
+    pub path: String,
     #[serde(flatten)]
     pub ty: DiagType,
 }
