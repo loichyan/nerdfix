@@ -1,3 +1,4 @@
+ INFO nerdfix::runtime: Load input from 'src/icons.json'
  INFO nerdfix::runtime: Check input file from 'tests/test-data.txt'
 note: Found obsolete icon U+F752
   ┌─ tests/test-data.txt:1:24
