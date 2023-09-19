@@ -118,13 +118,13 @@ impl Runtime {
         &self,
         context: &mut CheckerContext,
         input: &IoPath,
-        should_fix: bool,
-    ) -> error::Result<Option<String>> {
+        mut output: Option<&mut String>,
+    ) -> error::Result<bool> {
         info!("Check input file from '{}'", input);
-        let mut result = None::<String>;
         let content = input.read_to_string()?;
         let file_id = context.files.add(input.to_string(), content);
         let content = context.files.get(file_id).unwrap().source();
+        let mut updated = false;
         for (start, mut ch) in content.char_indices() {
             if let Some(icon) = self
                 .index()
@@ -132,10 +132,7 @@ impl Runtime {
                 .map(|&i| &self.icons[i])
                 .filter(|icon| icon.obsolete)
             {
-                let mut end = start + 1;
-                while !content.is_char_boundary(end) {
-                    end += 1;
-                }
+                let end = start + ch.len_utf8();
                 let candidates = Lazy::new(|| self.get_candidates(icon));
                 match context.format {
                     OutputFormat::Console => {
@@ -167,9 +164,7 @@ impl Runtime {
                         )?;
                     }
                 }
-                if should_fix {
-                    // Push all non-patched content.
-                    let res = result.get_or_insert_with(|| content[..start].to_owned());
+                if let Some(output) = output.as_mut() {
                     if let Some(&last) = context.history.get(&icon.codepoint) {
                         msginfo!("# Autofix with the last input '{}'", last);
                         ch = last;
@@ -195,21 +190,22 @@ impl Runtime {
                             }
                             Ok(None) => (),
                             Err(error::Error::Interrupted) => {
-                                res.push_str(&content[start..]);
-                                return Ok(result);
+                                output.push_str(&content[start..]);
+                                return Ok(updated);
                             }
                             Err(e) => return Err(e),
                         }
                     }
                 }
+                updated = true;
             }
-            // Save the new character.
-            if let Some(res) = result.as_mut() {
-                res.push(ch);
+            // Save the character.
+            if let Some(output) = output.as_mut() {
+                output.push(ch);
             }
         }
 
-        Ok(result)
+        Ok(updated)
     }
 
     fn get_candidates<'a>(&'a self, icon: &'a Icon) -> Vec<&'a Icon> {
