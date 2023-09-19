@@ -81,6 +81,7 @@ fn main_impl() -> error::Result<()> {
     tracing::subscriber::set_global_default(subscriber).context(error::Any)?;
 
     let mut rt = Runtime::builder();
+    // ignore builtin database when user provides input
     if args.input.is_empty() {
         rt.load_input(INDICES).unwrap();
         rt.load_input(SUBSTITUTIONS).unwrap();
