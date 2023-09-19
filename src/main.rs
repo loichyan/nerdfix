@@ -87,7 +87,7 @@ fn main_impl() -> error::Result<()> {
     if !args.replace.is_empty() {
         warn!("`--replace` is deprecated, use `--sub prefix:` instead");
     }
-    // ignore builtin database when user provides input
+    // Ignore builtin database when user provides input.
     if args.input.is_empty() {
         rt.load_db(ICONS).unwrap();
         rt.load_db(SUBSTITUTIONS).unwrap();
@@ -114,7 +114,7 @@ fn main_impl() -> error::Result<()> {
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
                 tryb!({
                     let source = source?;
-                    rt.check(&mut context, &source.0, false)
+                    rt.check(&mut context, &source.0, None)
                 })
                 .ignore_interrupted()
                 .log_error();
@@ -136,12 +136,13 @@ fn main_impl() -> error::Result<()> {
                 select_first,
                 ..Default::default()
             };
+            let mut buffer = String::new();
             for source in walk(source, recursive) {
                 tryb!({
                     let source = source?;
                     let Source(input, output) = &source;
                     let output = output.as_ref().unwrap_or(input);
-                    if let Some(patched) = rt.check(&mut context, input, true)? {
+                    if rt.check(&mut context, input, Some(&mut buffer))? {
                         if !context.write {
                             match prompt::prompt_yes_or_no(
                                 "Are your sure to write the patched content?",
@@ -153,8 +154,9 @@ fn main_impl() -> error::Result<()> {
                             }
                         }
                         info!("Write output to '{}'", output);
-                        output.write_str(&patched)?;
+                        output.write_str(&buffer)?;
                     }
+                    buffer.clear();
                     Ok(())
                 })
                 .ignore_interrupted()
