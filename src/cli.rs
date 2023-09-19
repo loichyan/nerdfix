@@ -14,18 +14,29 @@ const V_FORMAT: &str = "FORMAT";
 const INDEX_REV: &str = include_str!("index-rev");
 const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, INDEX_REV);
 
-// TODO: describe implicit behaviors
+const SUB_LONG_HELP: &str = "\
+Perform an exact/prefix substitution.
+
+This option accepts several substitution types of `TYPE:FROM/TO` syntax:
+  * Exact substitution: replaces an icon with another when its name matches \
+exactly. This is the default type when `TYPE` is omitted.
+  * Perfix substitution: replaces the prefix of an icon name with another, and \
+then tries to replace the icon with the one has the new name, e.g. use \
+`--sub prefix:mdi-/md-` to replace `mdi-tab` with `md-tab`.\
+";
+
 #[derive(Debug, Parser)]
 #[command(author, version, long_version = CLAP_LONG_VERSION)]
 pub struct Cli {
     /// Path(s) to load the icons cheat sheet, indices or substitutions.
+    ///
+    /// Note that builtin icons and substitution lists are not loaded if custom
+    /// input is provided. You can run `nerdfix index` to get and load them at
+    /// first.
     #[arg(short, long, global = true, value_name = V_PATH)]
     pub input: Vec<IoPath>,
     /// Perform an exact/prefix substitution.
-    ///
-    /// For example, use `--sub prefix:mdi-/md-` to replace all `mdi-*`
-    /// icons with the same ones in `md-*`.
-    #[arg(long, global = true, value_name = V_SUBSTITUTION)]
+    #[arg(long, global = true, value_name = V_SUBSTITUTION, long_help = SUB_LONG_HELP)]
     pub sub: Vec<Substitution>,
     /// Decrease log level.
     #[arg(
@@ -48,9 +59,6 @@ pub struct Cli {
     #[command(subcommand)]
     pub cmd: Command,
     /// [deprecated] Use `--input` instead.
-    ///
-    /// A substitutions list is a json object whose key is icon name and whose
-    /// value is a list of icons used to replace the icon.
     #[arg(long, global = true, value_name = V_PATH)]
     pub substitution: Vec<IoPath>,
     /// [deprecated] Use `--sub prefix:` instead.
@@ -62,7 +70,7 @@ pub struct Cli {
 pub enum Command {
     /// [deprecated] Use `index` instead.
     Cache {
-        /// Path to save the cached content.
+        /// Path to save the output.
         #[arg(short, long, value_name = V_PATH,)]
         output: IoPath,
     },
@@ -89,10 +97,10 @@ pub enum Command {
         /// [deprecated] Use `--write` instead.
         #[arg(short, long)]
         yes: bool,
-        /// Write content without confirmation.
+        /// Write output without confirmation.
         #[arg(short, long)]
         write: bool,
-        /// Select the first (and most similar) one for all suggestions.
+        /// Select the first (also the most similar) one for all suggestions.
         #[arg(long)]
         select_first: bool,
         /// Recursively traverse all directories.
