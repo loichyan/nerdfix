@@ -2,18 +2,18 @@
 
 use crate::{
     error,
-    icon::{Icon, Input},
+    icon::{Database, Icon},
 };
 use once_cell::sync::Lazy;
 use regex::Regex;
 use thisctx::WithContext;
 
-pub fn parse(s: &str) -> error::Result<Input> {
+pub fn parse(s: &str) -> error::Result<Database> {
     let s = s.trim_start();
     Ok(if s.starts_with('{') {
-        serde_json::from_str::<Input>(s)?
+        serde_json::from_str::<Database>(s)?
     } else {
-        Input {
+        Database {
             icons: parse_cheat_sheet(s)?,
             ..Default::default()
         }
@@ -85,7 +85,7 @@ const glyphs = {
     #[test]
     fn parse_index() {
         let icons = super::parse(INDEX).unwrap();
-        let expected = Input {
+        let expected = Database {
             icons: vec![
                 icon!("cod-account", 0xeb99),
                 icon!("cod-activate_breakpoints", 0xea97),
@@ -100,7 +100,7 @@ const glyphs = {
     #[test]
     fn parse_cheat_sheet() {
         let icons = super::parse(CHEAT_SHEET).unwrap();
-        let expected = Input {
+        let expected = Database {
             icons: vec![
                 icon!("cod-account", 0xeb99),
                 icon!("cod-activate_breakpoints", 0xea97),

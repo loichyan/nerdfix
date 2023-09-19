@@ -30,9 +30,9 @@ then tries to replace the icon with the one has the new name, e.g. use \
 pub struct Cli {
     /// Path(s) to load the icons cheat sheet, indices or substitutions.
     ///
-    /// Note that builtin icons and substitution lists are not loaded if custom
-    /// input is provided. You can run `nerdfix index` to get and load them at
-    /// first.
+    /// Note that builtin icons and substitution lists are not loaded if any
+    /// custom database is provided. You can run `nerdfix dump` to get and load
+    /// them at first.
     #[arg(short, long, global = true, value_name = V_PATH)]
     pub input: Vec<IoPath>,
     /// Perform an exact/prefix substitution.
@@ -68,14 +68,14 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// [deprecated] Use `index` instead.
+    /// [deprecated] Use `dump` instead.
     Cache {
         /// Path to save the output.
         #[arg(short, long, value_name = V_PATH,)]
         output: IoPath,
     },
-    /// Generate icons indices.
-    Index {
+    /// Dump records in current database.
+    Dump {
         /// Path to save the output.
         #[arg(short, long, value_name = V_PATH)]
         output: IoPath,

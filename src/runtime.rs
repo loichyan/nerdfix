@@ -2,7 +2,7 @@ use crate::{
     autocomplete::Autocompleter,
     cli::{IoPath, OutputFormat, UserInput},
     error,
-    icon::{Icon, Input, Substitution, SubstitutionType, Substitutions},
+    icon::{Database, Icon, Substitution, SubstitutionType, Substitutions},
     util::NGramSearcherExt,
 };
 use codespan_reporting::{
@@ -45,14 +45,14 @@ pub struct RuntimeBuilder {
 }
 
 impl RuntimeBuilder {
-    pub fn load_input_from(&mut self, input: &IoPath) -> error::Result<()> {
+    pub fn load_db_from(&mut self, input: &IoPath) -> error::Result<()> {
         info!("Load input from '{}'", input);
         let content = input.read_to_string()?;
-        self.load_input(&content)?;
+        self.load_db(&content)?;
         Ok(())
     }
 
-    pub fn load_input(&mut self, content: &str) -> error::Result<()> {
+    pub fn load_db(&mut self, content: &str) -> error::Result<()> {
         let input = crate::parser::parse(content)?;
         for icon in input.icons {
             if !self.icons.contains_key(&icon.name) {
@@ -94,9 +94,9 @@ impl Runtime {
         RuntimeBuilder::default()
     }
 
-    pub fn generate_indices(&self, output: &IoPath) -> error::Result<()> {
+    pub fn dump_db(&self, output: &IoPath) -> error::Result<()> {
         info!("Save indices to '{}'", output);
-        let indices = Input {
+        let indices = Database {
             icons: self.icons.values().cloned().collect(),
             substitutions: self
                 .exact_sub
