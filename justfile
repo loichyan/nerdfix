@@ -10,6 +10,7 @@ _setup_bash := 'set -euxo pipefail'
 _default:
 	@{{_just}} --list
 
+# Updates builtin database
 update-db: update-icons update-substitutions
 
 # Updates icon indices.
@@ -20,59 +21,59 @@ update-icons:
 	| cargo run -- dump -i - -o "{{icons}}"
 
 # https://github.com/loichyan/nerdfix/issues/9#issuecomment-1576944348
-substitutions-md := '{
-  "account-card-details": "card-account-details",
-  "azure": "microsoft-azure",
-  "bing": "microsoft-bing",
-  "circle": "circle-medium",
-  "circle-outline": "checkbox-blank-circle-outline",
-  "do-not-disturb": "minus-circle",
-  "do-not-disturb-off": "minus-circle-off",
-  "edge": "microsoft-edge",
-  "face-profile": "face-man-profile",
-  "github-circle": "github",
-  "gradient": "gradient-vertical",
-  "hangouts": "google-hangouts",
-  "internet-explorer": "microsoft-internet-explorer",
-  "json": "code-json",
-  "linkedin-box": "linkedin",
-  "login-variant": "exit-to-app",
-  "markdown": "language-markdown",
-  "office": "microsoft-office",
-  "onedrive": "microsoft-onedrive",
-  "onenote": "microsoft-onenote",
-  "playstation": "sony-playstation",
-  "radiobox-blank": "checkbox-blank-circle-outline",
-  "sort-alphabetical": "sort-alphabetical-variant",
-  "sort-numeric": "sort-numeric-variant",
-  "tablet-ipad": "tablet",
-  "terrain": "image-filter-hdr",
-  "textbox": "form-textbox",
-  "textbox-password": "form-textbox-password",
-  "towing": "tow-truck",
-  "voice": "account-voice",
-  "wii": "nintendo-wii",
-  "wiiu": "nintendo-wiiu",
-  "windows": "microsoft-windows",
-  "xamarin-outline": "microsoft-xamarin",
-  "xbox": "microsoft-xbox",
-  "xbox-controller": "microsoft-xbox-gamepad",
-  "xbox-controller-battery-alert": "microsoft-xbox-gamepad-battery-alert",
-  "xbox-controller-battery-empty": "microsoft-xbox-controller-battery-empty",
-  "xbox-controller-battery-full": "microsoft-xbox-controller-battery-full",
-  "xbox-controller-battery-low": "microsoft-xbox-controller-battery-low",
-  "xbox-controller-battery-medium": "microsoft-xbox-controller-battery-medium",
-  "xbox-controller-battery-unknown": "microsoft-xbox-controller-battery-unknown",
-  "xbox-controller-off": "microsoft-xbox-controller-off"
-}'
+substitutions-extra := '
+	"exact:account-card-details/card-account-details"
+	"exact:azure/microsoft-azure"
+	"exact:bing/microsoft-bing"
+	"exact:circle/circle-medium"
+	"exact:circle-outline/checkbox-blank-circle-outline"
+	"exact:do-not-disturb/minus-circle"
+	"exact:do-not-disturb-off/minus-circle-off"
+	"exact:edge/microsoft-edge"
+	"exact:face-profile/face-man-profile"
+	"exact:github-circle/github"
+	"exact:gradient/gradient-vertical"
+	"exact:hangouts/google-hangouts"
+	"exact:internet-explorer/microsoft-internet-explorer"
+	"exact:json/code-json"
+	"exact:linkedin-box/linkedin"
+	"exact:login-variant/exit-to-app"
+	"exact:markdown/language-markdown"
+	"exact:office/microsoft-office"
+	"exact:onedrive/microsoft-onedrive"
+	"exact:onenote/microsoft-onenote"
+	"exact:playstation/sony-playstation"
+	"exact:radiobox-blank/checkbox-blank-circle-outline"
+	"exact:sort-alphabetical/sort-alphabetical-variant"
+	"exact:sort-numeric/sort-numeric-variant"
+	"exact:tablet-ipad/tablet"
+	"exact:terrain/image-filter-hdr"
+	"exact:textbox/form-textbox"
+	"exact:textbox-password/form-textbox-password"
+	"exact:towing/tow-truck"
+	"exact:voice/account-voice"
+	"exact:wii/nintendo-wii"
+	"exact:wiiu/nintendo-wiiu"
+	"exact:windows/microsoft-windows"
+	"exact:xamarin-outline/microsoft-xamarin"
+	"exact:xbox/microsoft-xbox"
+	"exact:xbox-controller/microsoft-xbox-gamepad"
+	"exact:xbox-controller-battery-alert/microsoft-xbox-gamepad-battery-alert"
+	"exact:xbox-controller-battery-empty/microsoft-xbox-controller-battery-empty"
+	"exact:xbox-controller-battery-full/microsoft-xbox-controller-battery-full"
+	"exact:xbox-controller-battery-low/microsoft-xbox-controller-battery-low"
+	"exact:xbox-controller-battery-medium/microsoft-xbox-controller-battery-medium"
+	"exact:xbox-controller-battery-unknown/microsoft-xbox-controller-battery-unknown"
+	"exact:xbox-controller-off/microsoft-xbox-controller-off"
+	"prefix:mdi-/md-"
+'
 
 # Update icon substitutions list.
 update-substitutions:
 	#!/usr/bin/env bash
 	{{_setup_bash}}
 	{
-		{{_curl}} "https://raw.githubusercontent.com/Templarian/MaterialDesign-Meta/{{md_rev}}/meta.json" | jq '.[] | {(.aliases[]): .name}'
-		echo '{{substitutions-md}}'
-	} | jq -cs '
-		add | { substitutions: . | to_entries | map("exact:\(.key | sub("-";"_") | "mdi-\(.)")/\(.value | sub("-";"_") | "md-\(.)")") }
-	' >"{{substitutions}}"
+		{{_curl}} "https://raw.githubusercontent.com/Templarian/MaterialDesign-Meta/{{md_rev}}/meta.json" \
+		| jq '.[] | {from: .aliases[], to: .name} | "exact:\(.from | sub("-";"_") | "mdi-\(.)")/\(.to | sub("-";"_") | "md-\(.)")"'
+		echo '{{substitutions-extra}}'
+	} | jq -cs '{ substitutions: . }' >"{{substitutions}}"

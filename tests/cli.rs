@@ -102,6 +102,7 @@ fn fix_with_prefix_subs() {
         "fix",
         "--select-first",
         "--write",
+        "-i=src/icons.json",
         "--sub=prefix:mdi-/md-",
         "tests/test-data.txt:-"
     );
