@@ -52,11 +52,11 @@ fn check() {
 }
 
 #[test]
-fn check_with_input() {
+fn check_with_db() {
     test_cli!(
-        "check_with_input",
+        "check_with_db",
         "check",
-        "--input=tests/test-index.json",
+        "-i=tests/test-icons.json",
         "tests/test-data.txt"
     );
 }
@@ -89,8 +89,8 @@ fn fix_with_exact_subs() {
         "fix",
         "--select-first",
         "--write",
-        "--input=tests/test-substitution.json",
-        "--input=src/index.json",
+        "-i=src/icons.json",
+        "-i=tests/test-substitutions.json",
         "tests/test-data.txt:-"
     );
 }

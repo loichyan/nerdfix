@@ -14,9 +14,8 @@ pub(crate) fn display_codepoint(ch: char) -> String {
     format!("{:x}", ch as u32)
 }
 
-// TODO: rename to database
 #[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
-pub struct Input {
+pub struct Database {
     #[serde(default)]
     pub icons: Indices,
     #[serde(default)]

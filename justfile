@@ -1,19 +1,23 @@
 index_rev := `cat src/index-rev`
-md_rev := "f1e17ff8aad81f4b58f25a2e1956807297aa926e"
+md_rev := 'f1e17ff8aad81f4b58f25a2e1956807297aa926e'
+icons := 'src/icons.json'
+substitutions := 'src/substitutions.json'
 
 _just := quote(just_executable()) + ' --justfile=' + quote(justfile())
-_curl := "curl -fsSL"
-_setup_bash := "set -euxo pipefail"
+_curl := 'curl -fsSL'
+_setup_bash := 'set -euxo pipefail'
 
 _default:
 	@{{_just}} --list
 
+update-db: update-icons update-substitutions
+
 # Updates icon indices.
-update-index:
+update-icons:
 	#!/usr/bin/env bash
 	{{_setup_bash}}
 	{{_curl}} "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/{{index_rev}}/_posts/2017-01-04-icon-cheat-sheet.md" \
-	| cargo run -- index -i - -o src/index.json
+	| cargo run -- dump -i - -o "{{icons}}"
 
 # https://github.com/loichyan/nerdfix/issues/9#issuecomment-1576944348
 substitutions-md := '{
@@ -63,7 +67,7 @@ substitutions-md := '{
 }'
 
 # Update icon substitutions list.
-update-substitution:
+update-substitutions:
 	#!/usr/bin/env bash
 	{{_setup_bash}}
 	{
@@ -71,4 +75,4 @@ update-substitution:
 		echo '{{substitutions-md}}'
 	} | jq -cs '
 		add | { substitutions: . | to_entries | map("exact:\(.key | sub("-";"_") | "mdi-\(.)")/\(.value | sub("-";"_") | "md-\(.)")") }
-	' >src/substitution.json
+	' >"{{substitutions}}"

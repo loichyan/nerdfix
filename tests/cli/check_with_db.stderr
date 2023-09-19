@@ -1,2 +1,2 @@
- INFO nerdfix::runtime: Load input from 'tests/test-index.json'
+ INFO nerdfix::runtime: Load input from 'tests/test-icons.json'
  INFO nerdfix::runtime: Check input file from 'tests/test-data.txt'

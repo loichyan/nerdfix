@@ -20,8 +20,8 @@ use tracing::{error, info, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
 
-static INDICES: &str = include_str!("./index.json");
-static SUBSTITUTIONS: &str = include_str!("./substitution.json");
+static ICONS: &str = include_str!("./icons.json");
+static SUBSTITUTIONS: &str = include_str!("./substitutions.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = Source>,
@@ -89,17 +89,17 @@ fn main_impl() -> error::Result<()> {
     }
     // ignore builtin database when user provides input
     if args.input.is_empty() {
-        rt.load_input(INDICES).unwrap();
-        rt.load_input(SUBSTITUTIONS).unwrap();
+        rt.load_db(ICONS).unwrap();
+        rt.load_db(SUBSTITUTIONS).unwrap();
     }
     for input in args.input.iter() {
-        rt.load_input_from(input)?;
+        rt.load_db_from(input)?;
     }
     rt.with_substitutions(args.sub);
 
     match args.cmd {
-        Command::Cache { .. } => warn!("`cache` is deprecated, use `index` instead"),
-        Command::Index { output } => rt.build().generate_indices(&output)?,
+        Command::Cache { .. } => warn!("`cache` is deprecated, use `dump` instead"),
+        Command::Dump { output } => rt.build().dump_db(&output)?,
         Command::Check {
             format,
             source,
