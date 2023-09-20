@@ -16,8 +16,9 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
-use tracing::{error, info, instrument::WithSubscriber, warn, Level};
-use util::ResultExt;
+use tracing::{error, info, warn, Level};
+use tracing_subscriber::prelude::*;
+use util::{LogStatus, ResultExt};
 use walkdir::WalkDir;
 
 static ICONS: &str = include_str!("./icons.json");
@@ -79,7 +80,8 @@ fn main_impl() -> error::Result<()> {
         .with_target(false)
         .with_writer(std::io::stderr)
         .without_time()
-        .finish();
+        .finish()
+        .with(LogStatus);
     tracing::subscriber::set_global_default(subscriber).context(error::Any)?;
 
     let mut rt = Runtime::builder();
@@ -174,4 +176,7 @@ fn main_impl() -> error::Result<()> {
 
 fn main() {
     main_impl().log_error();
+    if LogStatus::has_error() {
+        std::process::exit(1);
+    }
 }
