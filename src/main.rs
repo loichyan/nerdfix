@@ -146,6 +146,7 @@ fn main_impl() -> error::Result<()> {
                     let source = source?;
                     let Source(input, output) = &source;
                     let output = output.as_ref().unwrap_or(input);
+                    buffer.clear();
                     if rt.check(&mut context, input, Some(&mut buffer))? {
                         if !context.write {
                             match prompt::prompt_yes_or_no(
@@ -160,7 +161,6 @@ fn main_impl() -> error::Result<()> {
                         info!("Write output to '{}'", output);
                         output.write_str(&buffer)?;
                     }
-                    buffer.clear();
                     Ok(())
                 })
                 .ignore_interrupted()
