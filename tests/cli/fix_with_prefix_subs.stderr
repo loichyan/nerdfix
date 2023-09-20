@@ -1,5 +1,5 @@
- INFO nerdfix::runtime: Load input from 'src/icons.json'
- INFO nerdfix::runtime: Check input file from 'tests/test-data.txt'
+ INFO Load input from 'src/icons.json'
+ INFO Check input file from 'tests/test-data.txt'
 note: Found obsolete icon U+F752
   ┌─ tests/test-data.txt:1:24
   │
@@ -86,4 +86,4 @@ note: Found obsolete icon U+F554
          4. 󱦰 U+F19B0 md-arrow_right_thin
 
 # Autofix with substitution '󰁕'
- INFO nerdfix: Write output to 'STDIO'
+ INFO Write output to 'STDIO'

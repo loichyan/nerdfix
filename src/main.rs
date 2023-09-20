@@ -16,7 +16,7 @@ use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
-use tracing::{error, info, warn, Level};
+use tracing::{error, info, instrument::WithSubscriber, warn, Level};
 use util::ResultExt;
 use walkdir::WalkDir;
 
@@ -72,10 +72,12 @@ fn main_impl() -> error::Result<()> {
         3 => Level::DEBUG,
         _ => Level::TRACE,
     };
-    // TODO: no module name
-    let subscriber = tracing_subscriber::FmtSubscriber::builder()
-        .with_writer(std::io::stderr)
+    let subscriber = tracing_subscriber::fmt()
+        .compact()
+        .with_file(false)
         .with_max_level(lv)
+        .with_target(false)
+        .with_writer(std::io::stderr)
         .without_time()
         .finish();
     tracing::subscriber::set_global_default(subscriber).context(error::Any)?;
