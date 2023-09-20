@@ -2,6 +2,33 @@ use crate::error;
 use noodler::NGramSearcher;
 use std::fmt;
 
+pub(crate) struct LogStatus;
+
+const _: () = {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use tracing::{Event, Level, Subscriber};
+    use tracing_subscriber::layer::{Context, Layer};
+
+    static HAS_ERROR: AtomicBool = AtomicBool::new(false);
+
+    impl<S> Layer<S> for LogStatus
+    where
+        S: Subscriber,
+    {
+        fn on_event(&self, ev: &Event<'_>, _ctx: Context<'_, S>) {
+            if ev.metadata().level() == &Level::ERROR {
+                HAS_ERROR.store(true, Ordering::Release);
+            }
+        }
+    }
+
+    impl LogStatus {
+        pub fn has_error() -> bool {
+            HAS_ERROR.load(Ordering::Acquire)
+        }
+    }
+};
+
 #[cfg(test)]
 macro_rules! icon {
     ($name:literal, $codepoint:literal) => {
