@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     fenix = {
       url = "github:nix-community/fenix";
@@ -8,55 +8,49 @@
     };
   };
 
-  outputs = { nixpkgs, flake-utils, fenix, ... }:
-    let
-      mkPkgs = pkgs:
-        let
-          inherit (pkgs) lib;
-        in
-        rec {
-          rustToolchain = pkgs.fenix.toolchainOf {
-            channel = (lib.importTOML ./rust-toolchain).toolchain.channel;
-            sha256 = "sha256-gdYqng0y9iHYzYPAdkC/ka3DRny3La/S5G8ASj0Ayyc=";
-          };
-          rust = (
-            with pkgs.fenix;
-            with rustToolchain;
-            combine [
-              defaultToolchain
-              rust-src
-              rust-analyzer
-            ]
-          );
-          rustPlatform = (pkgs.makeRustPlatform { cargo = rust; rustc = rust; });
-          nerdfix =
-            rustPlatform.buildRustPackage {
-              pname = "nerdfix";
-              version = "0.2.3";
-              src = ./.;
-              cargoLock.lockFile = ./Cargo.lock;
-            };
-        }
-      ;
-    in
-    (flake-utils.lib.eachDefaultSystem (system:
+  outputs = { nixpkgs, flake-utils, ... } @ inputs:
+    flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [ fenix.overlays.default ];
+          overlays = with inputs; [
+            inputs.fenix.overlays.default
+          ];
         };
-        inherit (mkPkgs pkgs) rust nerdfix;
+        inherit (pkgs) fenix ra-flake;
+        inherit (pkgs.lib) importTOML;
+
+        # Rust toolchain
+        rustChannel = (importTOML ./rust-toolchain).toolchain.channel;
+        rustToolchain = fenix.toolchainOf {
+          channel = rustChannel;
+          sha256 = "sha256-gdYqng0y9iHYzYPAdkC/ka3DRny3La/S5G8ASj0Ayyc=";
+        };
+        # For development
+        rust-dev = fenix.combine (with rustToolchain; [
+          defaultToolchain
+          rust-src
+          rust-analyzer
+        ]);
+        # For building packages
+        rust-minimal = rustToolchain.minimalToolchain;
+        rustPlatform = pkgs.makeRustPlatform {
+          cargo = rust-minimal;
+          rustc = rust-minimal;
+        };
       in
       {
-        packages.default = nerdfix;
-        devShells.default = pkgs.mkShell {
-          nativeBuildInputs = [ rust ];
+        packages.default = rustPlatform.buildRustPackage {
+          pname = "nerdfix";
+          version = "0.3.1";
+          src = ./.;
+          cargoLock.lockFile = ./Cargo.lock;
+        };
+        devShells.default = with pkgs; mkShell {
+          nativeBuildInputs = [
+            rust-dev
+          ];
         };
       }
-    )) // {
-      overlays.default = _: prev: {
-        inherit (mkPkgs prev) nerdfix;
-      };
-    }
-  ;
+    );
 }
