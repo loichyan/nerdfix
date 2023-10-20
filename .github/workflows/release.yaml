@@ -3,6 +3,7 @@ name: release
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -20,43 +21,42 @@ jobs:
           - { os: windows-latest , target: x86_64-pc-windows-msvc     , cross: false }
           - { os: windows-latest , target: aarch64-pc-windows-msvc    , cross: true  }
     runs-on: ${{ matrix.cfg.os }}
+    env:
+      CARGO: cargo
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Rust toolchain cache
-        id: rust-toolchain-cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.rustup
-          key: setup-rust-toolchain-${{ runner.os }}-1.70
+        uses: actions/checkout@v4
 
       - name: Setup Rust toolchain
-        if: steps.rust-toolchain-cache.outputs.cache-hit != 'true'
-        uses: dtolnay/rust-toolchain@1.70
+        uses: dtolnay/rust-toolchain@v1
         with:
+          toolchain: "1.70"
           targets: ${{ matrix.cfg.target }}
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
 
-      - name: Build
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.cfg.cross }}
-          command: build
-          args: --release --locked --target=${{ matrix.cfg.target }}
+      - name: Use cross
+        if: matrix.cfg.cross
+        run: |
+          cargo install cross
+          echo "CARGO=cross" >> $GITHUB_ENV
 
-      - name: Pack assets on unix
+      - name: Build release binary
+        run: |
+          ${{ env.CARGO }} build --verbose --release --target=${{ matrix.cfg.target }}
+
+      - name: Pack assets (*nix)
         if: matrix.cfg.os != 'windows-latest'
         shell: bash
         run: |
           asset=nerdfix-${{ matrix.cfg.target }}.tar.gz
           cp target/${{ matrix.cfg.target }}/release/nerdfix nerdfix
+          strip nerdfix
           tar -czvf nerdfix-${{ matrix.cfg.target }}.tar.gz nerdfix
           echo "ASSET=$asset" >> $GITHUB_ENV
 
-      - name: Pack assets on windows
+      - name: Pack assets (Windows)
         if: matrix.cfg.os == 'windows-latest'
         shell: bash
         run: |
