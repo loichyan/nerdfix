@@ -52,7 +52,6 @@ jobs:
         run: |
           asset=nerdfix-${{ matrix.cfg.target }}.tar.gz
           cp target/${{ matrix.cfg.target }}/release/nerdfix nerdfix
-          strip nerdfix
           tar -czvf nerdfix-${{ matrix.cfg.target }}.tar.gz nerdfix
           echo "ASSET=$asset" >> $GITHUB_ENV
 
