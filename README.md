@@ -133,6 +133,24 @@ search.
   e.g. `mdi-tab` is replaced with `md-tab` when `--sub prefix:mdi-/md-` is
   specified.
 
+### Database
+
+`nerdfix` accepts icons and substutitions in the following JSON format:
+
+```json
+{
+  "icons": [
+    { "name": "md-file_document", "codepoint": "f0219" },
+    { "name": "mdi-file_document_box", "codepoint": "0f719", "obsolete": true }
+  ],
+  "substitutions": ["exact:mdi-file_document_box/md-file_document"]
+}
+```
+
+As mentioned above, the precompiled `nerdfix` binary comes bundled with an
+indexed database that includes all available icons and some common
+substitutions.
+
 ### Structured output
 
 You can use `check --format json` to get structured output for further use.
