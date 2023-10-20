@@ -1,5 +1,54 @@
 # Changelog
 
+## v0.4.0 (2023-10-20)
+
+### Overview
+
+This releases primarily introduces the predefined substitutions suggested in
+[#9](https://github.com/loichyan/nerdfix/issues/9) (thanks
+[@Finii](https://github.com/Finii)!) and also brings a few refactors on the CLI.
+Here are some guides for migrating from `v0.3`:
+
+1. Use `dump` instead of `cache` to show all icons and substitutions in the
+   runtime database.
+2. Previous release of `nerdfix` supports the `--replace FROM:TO` argument to
+   perform a prefix substitution, now it defines a new argument
+   `--sub TYPE:FROM/TO` which supports both `exact` and `prefix` substitutions.
+   This means that you should use `--sub prefix:FROM/TO` in place of the old
+   one.
+3. You can pipe the input/output with `nerdfix` using the special `-` path.
+
+### Feat
+
+- **database**: make `prefix:mdi-/md-` a default substitution
+- support read from and write to stdio in more options
+- **runtime**: generate icon substitutions list for `nf-mdi-*`
+- **autofix**: load predefined substitutions list
+- **parser**: support new cheat-sheet format
+- **parser**: strip `nf-` prefixes
+- **cli**: use `-v/-q` to control log level
+
+### Fix
+
+- **runtime**: clear buffer before check sources
+- **log**: exit non-zero if any error occurs
+- **cli**: warn deprecated arguments
+- **justfile**: remove redundant `nf-` prefixes
+
+### Refactor
+
+- **cli**: rename term input to database
+- implement a syntax to define substitutions
+- **cli**: use `--input` to load substitutions
+- clean up typo and unused codes
+- **colored**: replace `colored` with `nu_ansi_term`
+- **autofix**: move `--replace` to global options
+- **cli**: rename subcommand `cache` to `index`
+- **cache**: save in json
+- **macros**: match block instead of statements
+- **error**: show path in logs
+- replace inline closures with try-block macro
+
 ## v0.3.1 (2023-05-15)
 
 ### Fix
