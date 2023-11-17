@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  release:
+    types: [published]
+  pull_request:
+  # workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  ci:
+    strategy:
+      matrix:
+        # prettier-ignore
+        cfg:
+          - { os: macos-latest   , target: x86_64-apple-darwin        , cross: false }
+          - { os: macos-latest   , target: aarch64-apple-darwin       , cross: true  }
+          - { os: ubuntu-latest  , target: x86_64-unknown-linux-musl  , cross: false }
+          - { os: ubuntu-latest  , target: aarch64-unknown-linux-musl , cross: true  }
+          - { os: windows-latest , target: x86_64-pc-windows-msvc     , cross: false }
+          - { os: windows-latest , target: aarch64-pc-windows-msvc    , cross: true  }
+    runs-on: ${{ matrix.cfg.os }}
+    env:
+      CARGO: cargo
+      RUST_TOOLCHAIN: "1.70"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize
+        id: init
+        run: |
+          echo "$HOME/.cargo/bin" >>$GITHUB_PATH
+          echo "cargo-dependencies=$(shasum -a 256 Cargo.lock | cut -d " " -f 1)" >>$GITHUB_OUTPUT
+
+      - name: Cache Rust toolchain
+        id: cache-rust-toolchain
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.rustup/
+          key: rust-toolchain-${{ matrix.cfg.target }}-${{ env.RUST_TOOLCHAIN }}
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: ${{ matrix.cfg.target }}
+          components: rustfmt,clippy
+
+      - name: Use cross
+        if: matrix.cfg.cross
+        run: |
+          cargo install cross
+          echo "CARGO=cross" >>$GITHUB_ENV
+
+      - name: Override Rust toolchain
+        run: |
+          rustup override set ${{ env.RUST_TOOLCHAIN }}
+          echo "CARGO_BUILD_TARGET=${{ matrix.cfg.target }}" >>$GITHUB_ENV
+
+      - name: Cache Cargo dependencies
+        id: cache-cargo-dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            .cargo/config
+            vendor/
+            target/
+          # prettier-ignore
+          key: cargo-dependencies-${{ matrix.cfg.target }}-${{ steps.init.outputs.cargo-dependencies }}
+
+      - name: Vendor Cargo dependencies
+        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
+        run: just vendor
+
+      - name: Run format check
+        run: $CARGO fmt --check --all
+
+      - name: Run tests
+        run: $CARGO test --workspace
+
+      - name: Build release binary
+        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          $CARGO build --verbose --release --target=${{ matrix.cfg.target }}
+          echo "RELEASE=true" >>$GITHUB_ENV
+
+      - name: Pack assets (*nix)
+        if: env.RELEASE && matrix.cfg.os != 'windows-latest'
+        shell: bash
+        run: |
+          asset=nerdfix-${{ matrix.cfg.target }}.tar.gz
+          cp target/${{ matrix.cfg.target }}/release/nerdfix nerdfix
+          tar -czvf nerdfix-${{ matrix.cfg.target }}.tar.gz nerdfix
+          echo "ASSET=$asset" >>$GITHUB_ENV
+
+      - name: Pack assets (Windows)
+        if: env.RELEASE && matrix.cfg.os == 'windows-latest'
+        shell: bash
+        run: |
+          asset=nerdfix-${{ matrix.cfg.target }}.zip
+          cp target/${{ matrix.cfg.target }}/release/nerdfix.exe nerdfix.exe
+          7z a $asset nerdfix.exe
+          echo "ASSET=$asset" >>$GITHUB_ENV
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
+        if: env.RELEASE && startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ env.ASSET }}
