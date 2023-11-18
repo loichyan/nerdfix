@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   ci:
     strategy:
@@ -95,7 +99,6 @@ jobs:
 
       - name: Pack assets (*nix)
         if: env.RELEASE && matrix.cfg.os != 'windows-latest'
-        shell: bash
         run: |
           asset=nerdfix-${{ matrix.cfg.target }}.tar.gz
           cp target/${{ matrix.cfg.target }}/release/nerdfix nerdfix
@@ -104,7 +107,6 @@ jobs:
 
       - name: Pack assets (Windows)
         if: env.RELEASE && matrix.cfg.os == 'windows-latest'
-        shell: bash
         run: |
           asset=nerdfix-${{ matrix.cfg.target }}.zip
           cp target/${{ matrix.cfg.target }}/release/nerdfix.exe nerdfix.exe
