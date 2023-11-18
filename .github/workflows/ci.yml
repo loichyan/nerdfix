@@ -82,7 +82,7 @@ jobs:
           key: cargo-dependencies-${{ matrix.cfg.target }}-${{ steps.init.outputs.cargo-dependencies }}
 
       - name: Vendor Cargo dependencies
-        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
+        if: steps.cache-cargo-dependencies.outputs.cache-hit != 'true'
         run: just vendor
 
       - name: Run format check
