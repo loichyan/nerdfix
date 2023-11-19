@@ -1,3 +1,6 @@
+// NOTE: ignored on Windows as CRLF causes differences in spans
+#![cfg(unix)]
+
 use assert_cmd::{assert::Assert, prelude::*};
 use core::fmt;
 use predicates::prelude::*;
@@ -8,10 +11,7 @@ use std::{
 };
 
 fn normalize_output(bytes: Vec<u8>) -> Vec<u8> {
-    let s = String::from_utf8(bytes).unwrap();
-    let s = strip_ansi_escapes::strip_str(s);
-    let s = normalize_line_endings::normalized(s.chars()).collect::<String>();
-    s.into_bytes()
+    strip_ansi_escapes::strip(bytes)
 }
 
 #[extend::ext]
