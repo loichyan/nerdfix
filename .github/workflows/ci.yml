@@ -91,22 +91,28 @@ jobs:
         run: |
           $CARGO build --verbose --release
           echo "RELEASE=true" >>$GITHUB_ENV
+          echo "RELEASE_DIR=target/$CARGO_BUILD_TARGET/release" >>$GITHUB_ENV
 
       - name: Pack assets (*nix)
         if: env.RELEASE && matrix.cfg.os != 'windows-latest'
         run: |
-          asset=nerdfix-${{ matrix.cfg.target }}.tar.gz
-          cp target/${{ matrix.cfg.target }}/release/nerdfix nerdfix
-          tar -czvf nerdfix-${{ matrix.cfg.target }}.tar.gz nerdfix
+          asset="nerdfix-$CARGO_BUILD_TARGET.tar.gz"
+          cp "$RELEASE_DIR/nerdfix" nerdfix
+          tar -czvf "$asset" nerdfix
           echo "ASSET=$asset" >>$GITHUB_ENV
 
       - name: Pack assets (Windows)
         if: env.RELEASE && matrix.cfg.os == 'windows-latest'
         run: |
-          asset=nerdfix-${{ matrix.cfg.target }}.zip
-          cp target/${{ matrix.cfg.target }}/release/nerdfix.exe nerdfix.exe
-          7z a $asset nerdfix.exe
+          asset="nerdfix-$CARGO_BUILD_TARGET.zip"
+          cp "$RELEASE_DIR/nerdfix.exe" nerdfix.exe
+          7z a "$asset" nerdfix.exe
           echo "ASSET=$asset" >>$GITHUB_ENV
+
+      # NOTE: don't save release build dependencies to cache
+      - name: Clean release build
+        if: env.RELEASE
+        run: rm -rf "$RELEASE_DIR"
 
       - name: Upload release asset
         uses: softprops/action-gh-release@v1
