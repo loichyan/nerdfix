@@ -85,11 +85,11 @@ jobs:
         if: steps.cache-cargo-dependencies.outputs.cache-hit != 'true'
         run: just vendor
 
-      - name: Run format check
-        run: $CARGO fmt --check --all
-
-      - name: Run tests
-        run: $CARGO test --workspace
+      - name: Run checks
+        if: \! matrix.cfg.cross
+        run: |
+          $CARGO fmt --check --all
+          $CARGO test --workspace
 
       - name: Build release binary
         if: github.event_name == 'release' && github.event.action == 'published'
