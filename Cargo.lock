@@ -445,6 +445,7 @@ dependencies = [
  "inquire",
  "itertools 0.12.0",
  "noodler",
+ "normalize-line-endings",
  "nu-ansi-term 0.49.0",
  "once_cell",
  "predicates",
@@ -565,7 +566,6 @@ dependencies = [
  "anstyle",
  "difflib",
  "itertools 0.11.0",
- "normalize-line-endings",
  "predicates-core",
 ]
 

@@ -7,13 +7,20 @@ use std::{
     process::{Command, Output},
 };
 
+fn normalize_output(bytes: Vec<u8>) -> Vec<u8> {
+    let s = String::from_utf8(bytes).unwrap();
+    let s = strip_ansi_escapes::strip_str(s);
+    let s = normalize_line_endings::normalized(s.chars()).collect::<String>();
+    s.into_bytes()
+}
+
 #[extend::ext]
 impl Command {
     fn assert_stripped(&mut self) -> Assert {
         let output = self.unwrap();
         Assert::new(Output {
-            stdout: strip_ansi_escapes::strip(output.stdout),
-            stderr: strip_ansi_escapes::strip(output.stderr),
+            stdout: normalize_output(output.stdout),
+            stderr: normalize_output(output.stderr),
             ..output
         })
     }
@@ -72,7 +79,7 @@ fn cmp_or_override(file: &str) -> impl '_ + Predicate<[u8]> {
         }))
     } else {
         let expected = std::fs::read_to_string(path).unwrap();
-        BoxedPredicate::new(predicate::str::diff(expected).normalize().from_utf8())
+        BoxedPredicate::new(predicate::str::diff(expected).from_utf8())
     }
 }
 
