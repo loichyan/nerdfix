@@ -35,7 +35,7 @@ jobs:
         id: init
         run: |
           echo "$HOME/.cargo/bin" >>$GITHUB_PATH
-          echo "cargo-dependencies=$(shasum -a 256 Cargo.lock | cut -d " " -f 1)" >>$GITHUB_OUTPUT
+          echo "cargo-dependencies=${{ hashFiles('**/Cargo.lock') }}" >>$GITHUB_OUTPUT
 
       - name: Install Just
         uses: extractions/setup-just@v1
