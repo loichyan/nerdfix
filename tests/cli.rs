@@ -1,4 +1,5 @@
 use assert_cmd::{assert::Assert, prelude::*};
+use core::fmt;
 use predicates::prelude::*;
 use std::{
     env,
@@ -18,16 +19,61 @@ impl Command {
     }
 }
 
+// TODO: respect find_case
+struct BoxedPredicate<V: ?Sized>(Box<dyn Predicate<V>>);
+
+impl<V: ?Sized> BoxedPredicate<V> {
+    pub fn new<P>(pred: P) -> Self
+    where
+        P: 'static + Predicate<V>,
+    {
+        Self(Box::new(pred))
+    }
+}
+
+impl<V: ?Sized> fmt::Display for BoxedPredicate<V> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<V: ?Sized> predicates::reflection::PredicateReflection for BoxedPredicate<V> {
+    fn parameters<'a>(
+        &'a self,
+    ) -> Box<dyn Iterator<Item = predicates::reflection::Parameter<'a>> + 'a> {
+        self.0.parameters()
+    }
+
+    fn children<'a>(&'a self) -> Box<dyn Iterator<Item = predicates::reflection::Child<'a>> + 'a> {
+        self.0.children()
+    }
+}
+
+impl<V: ?Sized> predicates::Predicate<V> for BoxedPredicate<V> {
+    fn eval(&self, variable: &V) -> bool {
+        self.0.eval(variable)
+    }
+
+    fn find_case<'a>(
+        &'a self,
+        expected: bool,
+        variable: &V,
+    ) -> Option<predicates::reflection::Case<'a>> {
+        self.0.find_case(expected, variable)
+    }
+}
+
 fn cmp_or_override(file: &str) -> impl '_ + Predicate<[u8]> {
-    predicate::function(move |content| {
-        let path = Path::new("tests/cli").join(file);
-        if matches!(env::var("NERDFIX_TEST").as_deref(), Ok("overwrite")) {
-            std::fs::write(path, content).unwrap();
+    let path = Path::new("tests").join(file);
+    if matches!(env::var("NERDFIX_TEST").as_deref(), Ok("overwrite")) {
+        BoxedPredicate::new(predicate::function(move |expected: &[u8]| {
+            std::fs::write(&path, expected).unwrap();
             true
-        } else {
-            content == std::fs::read(path).unwrap_or_default()
-        }
-    })
+        }))
+    } else {
+        let expected = std::fs::read_to_string(path).unwrap();
+        BoxedPredicate::new(predicate::str::diff(expected).normalize().from_utf8())
+    }
 }
 
 fn test_cli(name: &str, args: &[&str]) {
@@ -36,8 +82,8 @@ fn test_cli(name: &str, args: &[&str]) {
         .args(args)
         .assert_stripped()
         .success()
-        .stdout(cmp_or_override(&format!("{}.stdout", name)))
-        .stderr(cmp_or_override(&format!("{}.stderr", name)));
+        .stdout(cmp_or_override(&format!("cli/{}.stdout", name)))
+        .stderr(cmp_or_override(&format!("cli/{}.stderr", name)));
 }
 
 macro_rules! test_cli {
