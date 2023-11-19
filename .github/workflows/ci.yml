@@ -20,12 +20,9 @@ jobs:
       matrix:
         # prettier-ignore
         cfg:
-          - { os: macos-latest   , target: x86_64-apple-darwin        , cross: false }
-          - { os: macos-latest   , target: aarch64-apple-darwin       , cross: true  }
-          - { os: ubuntu-latest  , target: x86_64-unknown-linux-musl  , cross: false }
-          - { os: ubuntu-latest  , target: aarch64-unknown-linux-musl , cross: true  }
-          - { os: windows-latest , target: x86_64-pc-windows-msvc     , cross: false }
-          - { os: windows-latest , target: aarch64-pc-windows-msvc    , cross: true  }
+          - { os: macos-latest  , target: x86_64-apple-darwin       }
+          - { os: ubuntu-latest , target: x86_64-unknown-linux-musl }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc    }
     runs-on: ${{ matrix.cfg.os }}
     env:
       CARGO: cargo
@@ -60,12 +57,6 @@ jobs:
           targets: ${{ matrix.cfg.target }}
           components: rustfmt,clippy
 
-      - name: Use cross
-        if: matrix.cfg.cross
-        run: |
-          cargo install cross
-          echo "CARGO=cross" >>$GITHUB_ENV
-
       - name: Override Rust toolchain
         run: |
           rustup override set ${{ env.RUST_TOOLCHAIN }}
@@ -90,11 +81,9 @@ jobs:
         run: $CARGO build
 
       - name: Run format check
-        if: ${{ ! matrix.cfg.cross }}
         run: $CARGO fmt --check --all
 
       - name: Run tests
-        if: ${{ ! matrix.cfg.cross }}
         run: $CARGO test --workspace
 
       - name: Build release binary
