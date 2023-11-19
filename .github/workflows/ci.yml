@@ -16,6 +16,7 @@ defaults:
 jobs:
   ci:
     strategy:
+      fail-fast: false
       matrix:
         # prettier-ignore
         cfg:
@@ -83,18 +84,20 @@ jobs:
 
       - name: Vendor Cargo dependencies
         if: steps.cache-cargo-dependencies.outputs.cache-hit != 'true'
-        run: just vendor
+        run: |
+          just vendor
 
       - name: Run checks
-        if: ${{ ! matrix.cfg.cross }}
+        # if: ${{ ! matrix.cfg.cross }}
         run: |
+          $CARGO build --verbose
           $CARGO fmt --check --all
           $CARGO test --workspace
 
       - name: Build release binary
         if: github.event_name == 'release' && github.event.action == 'published'
         run: |
-          $CARGO build --verbose --release --target=${{ matrix.cfg.target }}
+          $CARGO build --verbose --release
           echo "RELEASE=true" >>$GITHUB_ENV
 
       - name: Pack assets (*nix)
