@@ -86,7 +86,7 @@ jobs:
         run: just vendor
 
       - name: Run checks
-        if: \! matrix.cfg.cross
+        if: ! matrix.cfg.cross
         run: |
           $CARGO fmt --check --all
           $CARGO test --workspace
