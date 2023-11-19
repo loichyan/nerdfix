@@ -77,3 +77,8 @@ update-substitutions:
 		| jq '.[] | {from: .aliases[], to: .name} | "exact:\(.from | sub("-";"_") | "mdi-\(.)")/\(.to | sub("-";"_") | "md-\(.)")"'
 		echo '{{substitutions-extra}}'
 	} | jq -cs '{ substitutions: . }' >"{{substitutions}}"
+
+# Vendor Cargo dependencies
+vendor:
+	mkdir -p .cargo
+	cargo vendor >>.cargo/config

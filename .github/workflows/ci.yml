@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  release:
+    types: [published]
+  pull_request:
+  # workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  ci:
+    strategy:
+      fail-fast: false
+      matrix:
+        # prettier-ignore
+        cfg:
+          - { os: macos-latest  , target: x86_64-apple-darwin       }
+          - { os: ubuntu-latest , target: x86_64-unknown-linux-musl }
+          - { os: windows-latest, target: x86_64-pc-windows-msvc    }
+    runs-on: ${{ matrix.cfg.os }}
+    env:
+      CARGO: cargo
+      RUST_TOOLCHAIN: "1.70"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize
+        id: init
+        run: |
+          echo "$HOME/.cargo/bin" >>$GITHUB_PATH
+          echo "cargo-dependencies=${{ hashFiles('**/Cargo.lock') }}" >>$GITHUB_OUTPUT
+
+      - name: Install Just
+        uses: extractions/setup-just@v1
+
+      - name: Cache Rust toolchain
+        id: cache-rust-toolchain
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.rustup/
+          key: rust-toolchain-${{ matrix.cfg.target }}-${{ env.RUST_TOOLCHAIN }}
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@v1
+        if: steps.cache-rust-toolchain.outputs.cache-hit != 'true'
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: ${{ matrix.cfg.target }}
+          components: rustfmt,clippy
+
+      - name: Override Rust toolchain
+        run: |
+          rustup override set ${{ env.RUST_TOOLCHAIN }}
+          echo "CARGO_BUILD_TARGET=${{ matrix.cfg.target }}" >>$GITHUB_ENV
+
+      - name: Cache Cargo dependencies
+        id: cache-cargo-dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            .cargo/config
+            vendor/
+            target/
+          # prettier-ignore
+          key: cargo-dependencies-${{ matrix.cfg.target }}-${{ steps.init.outputs.cargo-dependencies }}
+
+      - name: Vendor Cargo dependencies
+        if: steps.cache-cargo-dependencies.outputs.cache-hit != 'true'
+        run: just vendor
+
+      - name: Build Cargo dependencies
+        run: $CARGO build
+
+      - name: Run format check
+        run: $CARGO fmt --check --all
+
+      - name: Run tests
+        run: $CARGO test --workspace
+
+      - name: Build release binary
+        if: github.event_name == 'release' && github.event.action == 'published'
+        run: |
+          $CARGO build --verbose --release
+          echo "RELEASE=true" >>$GITHUB_ENV
+          echo "RELEASE_DIR=target/$CARGO_BUILD_TARGET/release" >>$GITHUB_ENV
+
+      - name: Pack assets (*nix)
+        if: env.RELEASE && matrix.cfg.os != 'windows-latest'
+        run: |
+          asset="nerdfix-$CARGO_BUILD_TARGET.tar.gz"
+          cp "$RELEASE_DIR/nerdfix" nerdfix
+          tar -czvf "$asset" nerdfix
+          echo "ASSET=$asset" >>$GITHUB_ENV
+
+      - name: Pack assets (Windows)
+        if: env.RELEASE && matrix.cfg.os == 'windows-latest'
+        run: |
+          asset="nerdfix-$CARGO_BUILD_TARGET.zip"
+          cp "$RELEASE_DIR/nerdfix.exe" nerdfix.exe
+          7z a "$asset" nerdfix.exe
+          echo "ASSET=$asset" >>$GITHUB_ENV
+
+      # NOTE: don't save release build dependencies to cache
+      - name: Clean release build
+        if: env.RELEASE
+        run: rm -rf "$RELEASE_DIR"
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v1
+        if: env.RELEASE && startsWith(github.ref, 'refs/tags/')
+        with:
+          files: ${{ env.ASSET }}
