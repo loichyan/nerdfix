@@ -67,7 +67,7 @@ macro_rules! msginfo {
     };
 }
 
-macro_rules! tryb {
+macro_rules! tri {
     ($block:block) => {
         (|| $block)()
     };

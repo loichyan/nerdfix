@@ -48,7 +48,7 @@ fn walk<'a>(
                     .flat_map(|w| w.into_iter())
                 })
                 .filter_map(|entry| {
-                    tryb!({
+                    tri!({
                         let path = entry?.into_path();
                         if path.is_file() {
                             Ok(Some(path))
@@ -116,7 +116,7 @@ fn main_impl() -> error::Result<()> {
                 ..Default::default()
             };
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
-                tryb!({
+                tri!({
                     let source = source?;
                     rt.check(&mut context, &source.0, None)
                 })
@@ -142,7 +142,7 @@ fn main_impl() -> error::Result<()> {
             };
             let mut buffer = String::new();
             for source in walk(source, recursive) {
-                tryb!({
+                tri!({
                     let source = source?;
                     let Source(input, output) = &source;
                     let output = output.as_ref().unwrap_or(input);

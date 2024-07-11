@@ -133,7 +133,7 @@ mod substitution {
                 }
             }
             let to = &s[start..];
-            tryb!({
+            tri!({
                 let from = from?;
                 if from.is_empty() || to.is_empty() {
                     None
