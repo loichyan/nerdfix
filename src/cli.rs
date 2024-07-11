@@ -1,9 +1,8 @@
 //! Command line arguments parser.
 
-use core::fmt;
-use std::io;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::{fmt, io};
 
 use clap::{Parser, Subcommand, ValueEnum};
 use shadow_rs::formatcp;

@@ -1,10 +1,12 @@
 use std::collections::HashMap;
+use std::fmt;
+use std::io::Write;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
-use miette::{miette, LabeledSpan};
+use miette::{Diagnostic, ReportHandler};
 use once_cell::unsync::{Lazy, OnceCell};
 use serde::Serialize;
 use thisctx::IntoError;
@@ -130,18 +132,20 @@ impl Runtime {
                 let candidates = Lazy::new(|| self.get_candidates(icon));
                 match context.format {
                     OutputFormat::Console => {
-                        let diag = miette!(
-                            severity = Severity::Info,
-                            labels = vec![LabeledSpan::at(
-                                start..end,
-                                format!("Icon '{}' is marked as obsolete", icon.name),
-                            )],
-                            help = self.diagnostic_notes(&candidates),
-                            "Found obsolete icon U+{:X}",
-                            icon.codepoint as u32,
-                        )
-                        .with_source_code(content.clone());
-                        writeln!(&mut context.writer, "{:?}", diag)?;
+                        let diag = error::ObsoleteIcon {
+                            source_code: &content,
+                            icon,
+                            span: (start, end),
+                            candidates: &candidates,
+                        };
+                        writeln!(
+                            &mut context.writer,
+                            "{:?}",
+                            DiagReporter {
+                                handler: &*context.handler,
+                                diag: &diag,
+                            }
+                        )?;
                     }
                     OutputFormat::Json => {
                         let diag = DiagOutput {
@@ -222,27 +226,6 @@ impl Runtime {
                 let name = icon.name.strip_prefix(&rep.from)?;
                 self.icons.get(&format!("{}{name}", rep.to))
             }))
-    }
-
-    fn diagnostic_notes(&self, candidates: &[&Icon]) -> String {
-        use std::fmt::Write;
-        let mut notes = String::from("You could replace it with:\n");
-
-        for (i, &candi) in candidates.iter().enumerate() {
-            writeln!(
-                &mut notes,
-                "  {}. {} U+{:05X} {}",
-                i + 1,
-                candi.codepoint,
-                candi.codepoint as u32,
-                &candi.name
-            )
-            .unwrap();
-        }
-        // Remove trailing newline.
-        notes.pop();
-
-        notes
     }
 
     pub fn prompt_input_icon(&self, candidates: Option<&[&Icon]>) -> error::Result<Option<char>> {
@@ -356,6 +339,7 @@ impl Runtime {
 
 pub struct CheckerContext {
     pub writer: Box<dyn std::io::Write>,
+    pub handler: Box<dyn ReportHandler>,
     pub history: HashMap<char, char>,
     pub format: OutputFormat,
     pub write: bool,
@@ -366,6 +350,7 @@ impl Default for CheckerContext {
     fn default() -> Self {
         Self {
             writer: Box::new(std::io::stderr()),
+            handler: Box::new(miette::MietteHandler::new()),
             history: HashMap::default(),
             format: OutputFormat::default(),
             write: false,
@@ -407,5 +392,16 @@ impl From<Severity> for miette::Severity {
             Severity::Warning => Self::Warning,
             Severity::Info => Self::Advice,
         }
+    }
+}
+
+struct DiagReporter<'a> {
+    handler: &'a dyn ReportHandler,
+    diag: &'a dyn Diagnostic,
+}
+
+impl fmt::Debug for DiagReporter<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.handler.debug(self.diag, f)
     }
 }
