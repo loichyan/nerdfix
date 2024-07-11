@@ -4,6 +4,7 @@ mod autocomplete;
 mod cli;
 mod error;
 mod icon;
+mod input;
 mod parser;
 mod prompt;
 mod runtime;

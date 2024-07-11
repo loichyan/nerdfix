@@ -119,99 +119,114 @@ impl Runtime {
         mut output: Option<&mut String>,
     ) -> error::Result<bool> {
         info!("Check input file from '{}'", input);
-        let bytes = input.read_all()?;
-        if !context.include_binary
-            && matches!(
-                content_inspector::inspect(&bytes),
-                content_inspector::ContentType::BINARY
-            )
+
+        let mut reader = input.open()?;
+        let Some(mut line) = reader.next_line()? else {
+            return Ok(false);
+        };
+
+        if !context.include_binary && line.content_type() == content_inspector::ContentType::BINARY
         {
             warn!("Skip binary file '{}'", input);
             return Ok(false);
         }
-        let content = String::from_utf8_lossy(&bytes);
+
         let mut updated = false;
-        for (start, mut ch) in content.char_indices() {
-            if let Some(icon) = self
-                .index()
-                .get(&ch)
-                .map(|&i| &self.icons[i])
-                .filter(|icon| icon.obsolete)
-            {
-                let end = start + ch.len_utf8();
-                let candidates = Lazy::new(|| self.get_candidates(icon));
-                match context.format {
-                    OutputFormat::Console => {
-                        let diag = error::ObsoleteIcon {
-                            source_code: &content,
-                            icon,
-                            span: (start, end),
-                            candidates: &candidates,
-                        };
-                        writeln!(
-                            &mut context.writer,
-                            "{:?}",
-                            DiagReporter {
-                                handler: &*context.handler,
-                                diag: &diag,
-                            }
-                        )?;
-                    }
-                    OutputFormat::Json => {
-                        let diag = DiagOutput {
-                            severity: Severity::Info,
-                            path: input.to_string(),
-                            ty: DiagType::Obsolete {
+        loop {
+            let text = std::str::from_utf8(line.contents())?;
+            for (start, mut ch) in text.char_indices() {
+                let start = line.offset_of(start);
+
+                if let Some(icon) = self
+                    .index()
+                    .get(&ch)
+                    .map(|&i| &self.icons[i])
+                    .filter(|icon| icon.obsolete)
+                {
+                    let end = start + ch.len_utf8();
+                    let candidates = Lazy::new(|| self.get_candidates(icon));
+                    match context.format {
+                        OutputFormat::Console => {
+                            let diag = error::ObsoleteIcon {
+                                source_code: &line,
+                                icon,
                                 span: (start, end),
-                                name: icon.name.clone(),
-                                codepoint: icon.codepoint.into(),
-                            },
-                        };
-                        writeln!(
-                            &mut context.writer,
-                            "{}",
-                            serde_json::to_string(&diag).unwrap()
-                        )?;
+                                candidates: &candidates,
+                            };
+                            writeln!(
+                                &mut context.writer,
+                                "{:?}",
+                                DiagReporter {
+                                    handler: &*context.handler,
+                                    diag: &diag,
+                                }
+                            )?;
+                        }
+                        OutputFormat::Json => {
+                            let diag = DiagOutput {
+                                severity: Severity::Info,
+                                path: input.to_string(),
+                                ty: DiagType::Obsolete {
+                                    span: (start, end),
+                                    name: icon.name.clone(),
+                                    codepoint: icon.codepoint.into(),
+                                },
+                            };
+                            writeln!(
+                                &mut context.writer,
+                                "{}",
+                                serde_json::to_string(&diag).unwrap()
+                            )?;
+                        }
                     }
-                }
-                if let Some(output) = output.as_mut() {
-                    if let Some(&last) = context.history.get(&icon.codepoint) {
-                        msginfo!("# Autofix with the last input '{}'", last);
-                        ch = last;
-                    } else if let Some(new) = self.get_substitutions(icon).next() {
-                        msginfo!("# Autofix with substitution '{}'", new.codepoint);
-                        ch = new.codepoint;
-                    } else if context.select_first {
-                        if let Some(&first) = candidates.first() {
-                            msginfo!("# Autofix with the first suggestion '{}'", first.codepoint);
-                            ch = first.codepoint;
+                    if let Some(output) = output.as_mut() {
+                        if let Some(&last) = context.history.get(&icon.codepoint) {
+                            msginfo!("# Autofix with the last input '{}'", last);
+                            ch = last;
+                        } else if let Some(new) = self.get_substitutions(icon).next() {
+                            msginfo!("# Autofix with substitution '{}'", new.codepoint);
+                            ch = new.codepoint;
+                        } else if context.select_first {
+                            if let Some(&first) = candidates.first() {
+                                msginfo!(
+                                    "# Autofix with the first suggestion '{}'",
+                                    first.codepoint
+                                );
+                                ch = first.codepoint;
+                            } else {
+                                error!(
+                                    "Cannot find a similar icon for '{} {}'",
+                                    icon.codepoint, icon.name
+                                );
+                            }
                         } else {
-                            error!(
-                                "Cannot find a similar icon for '{} {}'",
-                                icon.codepoint, icon.name
-                            );
-                        }
-                    } else {
-                        // Input a new icon
-                        match self.prompt_input_icon(Some(&candidates)) {
-                            Ok(Some(new)) => {
-                                context.history.insert(icon.codepoint, new);
-                                ch = new;
+                            // Input a new icon
+                            match self.prompt_input_icon(Some(&candidates)) {
+                                Ok(Some(new)) => {
+                                    context.history.insert(icon.codepoint, new);
+                                    ch = new;
+                                }
+                                Ok(None) => (),
+                                Err(error::Error::Interrupted) => {
+                                    output.push_str(&text[start..]);
+                                    return Ok(updated);
+                                }
+                                Err(e) => return Err(e),
                             }
-                            Ok(None) => (),
-                            Err(error::Error::Interrupted) => {
-                                output.push_str(&content[start..]);
-                                return Ok(updated);
-                            }
-                            Err(e) => return Err(e),
                         }
                     }
+                    updated = true;
                 }
-                updated = true;
+                // Save the character.
+                if let Some(output) = output.as_mut() {
+                    output.push(ch);
+                }
             }
-            // Save the character.
-            if let Some(output) = output.as_mut() {
-                output.push(ch);
+
+            if let Some(l) = reader.next_line()? {
+                line = l;
+            } else {
+                break;
             }
         }
 
