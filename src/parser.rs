@@ -1,4 +1,4 @@
-//! Parses font infomation from nerd font official cheat sheet.
+//! Parses font information from nerd font official cheat sheet.
 
 use once_cell::sync::Lazy;
 use regex::Regex;

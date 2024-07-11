@@ -1,4 +1,4 @@
-//! Nerd font icons infomation.
+//! Nerd font icons information.
 
 use std::fmt;
 
