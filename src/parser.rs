@@ -1,12 +1,11 @@
 //! Parses font infomation from nerd font official cheat sheet.
 
-use crate::{
-    error,
-    icon::{Database, Icon},
-};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use thisctx::WithContext;
+
+use crate::error;
+use crate::icon::{Database, Icon};
 
 pub fn parse(s: &str) -> error::Result<Database> {
     let s = s.trim_start();

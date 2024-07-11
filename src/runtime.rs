@@ -1,24 +1,24 @@
-use crate::{
-    autocomplete::Autocompleter,
-    cli::{IoPath, OutputFormat, UserInput},
-    error,
-    icon::{Database, Icon, Substitution, SubstitutionType, Substitutions},
-    util::NGramSearcherExt,
-};
-use codespan_reporting::{
-    diagnostic::{Diagnostic, Label},
-    files::SimpleFiles,
-    term,
-    term::termcolor::{ColorChoice, StandardStream},
-};
+use std::collections::HashMap;
+use std::io::Write;
+use std::rc::Rc;
+
+use codespan_reporting::diagnostic::{Diagnostic, Label};
+use codespan_reporting::files::SimpleFiles;
+use codespan_reporting::term;
+use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
 use once_cell::unsync::{Lazy, OnceCell};
 use serde::Serialize;
-use std::{collections::HashMap, io::Write, rc::Rc};
 use thisctx::IntoError;
 use tracing::info;
+
+use crate::autocomplete::Autocompleter;
+use crate::cli::{IoPath, OutputFormat, UserInput};
+use crate::error;
+use crate::icon::{Database, Icon, Substitution, SubstitutionType, Substitutions};
+use crate::util::NGramSearcherExt;
 
 const ARITY: usize = 3;
 const PAD_LEN: usize = 2;
@@ -101,10 +101,12 @@ impl Runtime {
             substitutions: self
                 .exact_sub
                 .iter()
-                .map(|(k, v)| Substitution {
-                    ty: SubstitutionType::Exact,
-                    from: k.clone(),
-                    to: v.clone(),
+                .map(|(k, v)| {
+                    Substitution {
+                        ty: SubstitutionType::Exact,
+                        from: k.clone(),
+                        to: v.clone(),
+                    }
                 })
                 .chain(self.prefix_sub.iter().cloned())
                 .collect(),
@@ -282,20 +284,24 @@ impl Runtime {
                         continue;
                     }
                 }
-                UserInput::Char(ch) => match self.index().get(&ch) {
-                    Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
-                    _ => {
-                        msgerror!("# '{}' is not a valid icon!", ch);
-                        continue;
+                UserInput::Char(ch) => {
+                    match self.index().get(&ch) {
+                        Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
+                        _ => {
+                            msgerror!("# '{}' is not a valid icon!", ch);
+                            continue;
+                        }
                     }
-                },
-                UserInput::Candidate(i) => match candidates.get(i - 1) {
-                    Some(&icon) => icon,
-                    None => {
-                        msgerror!("# '{}' is not a valid candidate!", i);
-                        continue;
+                }
+                UserInput::Candidate(i) => {
+                    match candidates.get(i - 1) {
+                        Some(&icon) => icon,
+                        None => {
+                            msgerror!("# '{}' is not a valid candidate!", i);
+                            continue;
+                        }
                     }
-                },
+                }
                 UserInput::Codepoint(hex) => {
                     match char::from_u32(hex).and_then(|ch| self.index().get(&ch)) {
                         Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],

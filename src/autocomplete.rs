@@ -1,10 +1,13 @@
 //! Autocompletion and fuzzy search for nerd fonts.
 
-use crate::{icon::Icon, runtime::NGram};
+use std::rc::Rc;
+
 use indexmap::IndexMap;
 use inquire::Autocomplete;
 use itertools::Itertools;
-use std::rc::Rc;
+
+use crate::icon::Icon;
+use crate::runtime::NGram;
 
 const THRESHOLD: f32 = 0.6;
 const MAX_SUGGESTIONS: usize = 100;

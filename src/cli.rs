@@ -1,11 +1,16 @@
 //! Command line arguments parser.
 
-use crate::{error, icon::Substitution, shadow};
-use clap::{Parser, Subcommand, ValueEnum};
 use core::fmt;
+use std::io;
+use std::path::PathBuf;
+use std::str::FromStr;
+
+use clap::{Parser, Subcommand, ValueEnum};
 use shadow_rs::formatcp;
-use std::{io, path::PathBuf, str::FromStr};
 use thisctx::IntoError;
+
+use crate::icon::Substitution;
+use crate::{error, shadow};
 
 const V_PATH: &str = "PATH";
 const V_SOURCE: &str = "SOURCE";
@@ -18,12 +23,11 @@ const SUB_LONG_HELP: &str = "\
 Perform an exact/prefix substitution.
 
 This option accepts several substitution types of `TYPE:FROM/TO` syntax:
-  * Exact substitution: replaces an icon with another when its name matches \
-exactly. This is the default type when `TYPE` is omitted.
-  * Perfix substitution: replaces the prefix of an icon name with another, and \
-then tries to replace the icon with the one has the new name, e.g. use \
-`--sub prefix:mdi-/md-` to replace `mdi-tab` with `md-tab`.\
-";
+  * Exact substitution: replaces an icon with another when its name matches exactly. This is the \
+                             default type when `TYPE` is omitted.
+  * Perfix substitution: replaces the prefix of an icon name with another, and then tries to \
+                             replace the icon with the one has the new name, e.g. use `--sub \
+                             prefix:mdi-/md-` to replace `mdi-tab` with `md-tab`.";
 
 #[derive(Debug, Parser)]
 #[command(author, version, long_version = CLAP_LONG_VERSION)]

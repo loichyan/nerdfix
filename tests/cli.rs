@@ -1,14 +1,14 @@
 // NOTE: ignored on Windows as CRLF causes differences in spans
 #![cfg(unix)]
 
-use assert_cmd::{assert::Assert, prelude::*};
 use core::fmt;
+use std::env;
+use std::path::Path;
+use std::process::{Command, Output};
+
+use assert_cmd::assert::Assert;
+use assert_cmd::prelude::*;
 use predicates::prelude::*;
-use std::{
-    env,
-    path::Path,
-    process::{Command, Output},
-};
 
 fn normalize_output(bytes: Vec<u8>) -> Vec<u8> {
     strip_ansi_escapes::strip(bytes)
