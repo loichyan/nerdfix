@@ -107,11 +107,13 @@ fn main_impl() -> error::Result<()> {
             format,
             source,
             recursive,
+            include_binary,
         } => {
             let rt = rt.build();
             let mut context = CheckerContext {
                 format,
                 writer: Box::new(std::io::stdout()),
+                include_binary,
                 ..Default::default()
             };
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
@@ -128,6 +130,7 @@ fn main_impl() -> error::Result<()> {
             write,
             select_first,
             recursive,
+            include_binary,
             source,
         } => {
             if yes {
@@ -137,6 +140,7 @@ fn main_impl() -> error::Result<()> {
             let mut context = CheckerContext {
                 write,
                 select_first,
+                include_binary,
                 ..Default::default()
             };
             let mut buffer = String::new();

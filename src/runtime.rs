@@ -10,7 +10,7 @@ use miette::{Diagnostic, ReportHandler};
 use once_cell::unsync::{Lazy, OnceCell};
 use serde::Serialize;
 use thisctx::IntoError;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::autocomplete::Autocompleter;
 use crate::cli::{IoPath, OutputFormat, UserInput};
@@ -119,7 +119,17 @@ impl Runtime {
         mut output: Option<&mut String>,
     ) -> error::Result<bool> {
         info!("Check input file from '{}'", input);
-        let content = input.read_to_string()?;
+        let bytes = input.read_all()?;
+        if !context.include_binary
+            && matches!(
+                content_inspector::inspect(&bytes),
+                content_inspector::ContentType::BINARY
+            )
+        {
+            warn!("Skip binary file '{}'", input);
+            return Ok(false);
+        }
+        let content = String::from_utf8_lossy(&bytes);
         let mut updated = false;
         for (start, mut ch) in content.char_indices() {
             if let Some(icon) = self
@@ -344,6 +354,7 @@ pub struct CheckerContext {
     pub format: OutputFormat,
     pub write: bool,
     pub select_first: bool,
+    pub include_binary: bool,
 }
 
 impl Default for CheckerContext {
@@ -355,6 +366,7 @@ impl Default for CheckerContext {
             format: OutputFormat::default(),
             write: false,
             select_first: false,
+            include_binary: false,
         }
     }
 }

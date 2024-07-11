@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 use std::str::FromStr;
-use std::{fmt, io};
+use std::{fmt, fs, io};
 
 use clap::{Parser, Subcommand, ValueEnum};
 use shadow_rs::formatcp;
@@ -91,6 +91,9 @@ pub enum Command {
         /// Recursively traverse all directories.
         #[arg(short, long)]
         recursive: bool,
+        /// Do not skip binary files.
+        #[arg(long)]
+        include_binary: bool,
         /// Path(s) of files to check.
         #[arg(value_name = V_PATH)]
         source: Vec<IoPath>,
@@ -109,6 +112,9 @@ pub enum Command {
         /// Recursively traverse all directories.
         #[arg(short, long)]
         recursive: bool,
+        /// Do not skip binary files.
+        #[arg(long)]
+        include_binary: bool,
         /// Path tuple(s) of files to read from and write to.
         ///
         /// Each tuple is an input path followed by an optional output path,
@@ -178,17 +184,24 @@ impl fmt::Display for IoPath {
 }
 
 impl IoPath {
-    pub fn read_to_string(&self) -> io::Result<String> {
+    pub fn read_all(&self) -> io::Result<Vec<u8>> {
+        let mut buf = Vec::new();
         match self {
-            IoPath::Stdio => io::read_to_string(io::stdin()),
-            IoPath::Path(path) => std::fs::read_to_string(path),
-        }
+            IoPath::Stdio => _ = io::Read::read_to_end(&mut io::stdin(), &mut buf)?,
+            IoPath::Path(path) => _ = io::Read::read_to_end(&mut fs::File::open(path)?, &mut buf)?,
+        };
+        Ok(buf)
+    }
+
+    pub fn read_to_string(&self) -> io::Result<String> {
+        self.read_all()
+            .map(|s| String::from_utf8_lossy(&s).as_ref().to_owned())
     }
 
     pub fn write_str(&self, content: &str) -> io::Result<()> {
         match self {
             IoPath::Stdio => io::Write::write_all(&mut io::stdout(), content.as_bytes()),
-            IoPath::Path(path) => std::fs::write(path, content),
+            IoPath::Path(path) => fs::write(path, content),
         }
     }
 }
