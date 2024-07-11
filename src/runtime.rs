@@ -101,12 +101,10 @@ impl Runtime {
             substitutions: self
                 .exact_sub
                 .iter()
-                .map(|(k, v)| {
-                    Substitution {
-                        ty: SubstitutionType::Exact,
-                        from: k.clone(),
-                        to: v.clone(),
-                    }
+                .map(|(k, v)| Substitution {
+                    ty: SubstitutionType::Exact,
+                    from: k.clone(),
+                    to: v.clone(),
                 })
                 .chain(self.prefix_sub.iter().cloned())
                 .collect(),
@@ -284,24 +282,20 @@ impl Runtime {
                         continue;
                     }
                 }
-                UserInput::Char(ch) => {
-                    match self.index().get(&ch) {
-                        Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
-                        _ => {
-                            msgerror!("# '{}' is not a valid icon!", ch);
-                            continue;
-                        }
+                UserInput::Char(ch) => match self.index().get(&ch) {
+                    Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
+                    _ => {
+                        msgerror!("# '{}' is not a valid icon!", ch);
+                        continue;
                     }
-                }
-                UserInput::Candidate(i) => {
-                    match candidates.get(i - 1) {
-                        Some(&icon) => icon,
-                        None => {
-                            msgerror!("# '{}' is not a valid candidate!", i);
-                            continue;
-                        }
+                },
+                UserInput::Candidate(i) => match candidates.get(i - 1) {
+                    Some(&icon) => icon,
+                    None => {
+                        msgerror!("# '{}' is not a valid candidate!", i);
+                        continue;
                     }
-                }
+                },
                 UserInput::Codepoint(hex) => {
                     match char::from_u32(hex).and_then(|ch| self.index().get(&ch)) {
                         Some(&icon) if !self.icons[icon].obsolete => &self.icons[icon],
