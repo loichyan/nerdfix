@@ -25,7 +25,7 @@ Perform an exact/prefix substitution.
 This option accepts several substitution types of `TYPE:FROM/TO` syntax:
   * Exact substitution: replaces an icon with another when its name matches exactly. This is the \
                              default type when `TYPE` is omitted.
-  * Perfix substitution: replaces the prefix of an icon name with another, and then tries to \
+  * Prefix substitution: replaces the prefix of an icon name with another, and then tries to \
                              replace the icon with the one has the new name, e.g. use `--sub \
                              prefix:mdi-/md-` to replace `mdi-tab` with `md-tab`.";
 
