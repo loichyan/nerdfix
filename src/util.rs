@@ -1,11 +1,14 @@
-use crate::error;
-use noodler::NGramSearcher;
 use std::fmt;
+
+use noodler::NGramSearcher;
+
+use crate::error;
 
 pub(crate) struct LogStatus;
 
 const _: () = {
     use std::sync::atomic::{AtomicBool, Ordering};
+
     use tracing::{Event, Level, Subscriber};
     use tracing_subscriber::layer::{Context, Layer};
 

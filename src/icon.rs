@@ -1,9 +1,12 @@
 //! Nerd font icons infomation.
 
-use crate::error;
-use serde::{de::Visitor, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
+
+use serde::de::Visitor;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thisctx::IntoError;
+
+use crate::error;
 
 pub(crate) fn parse_codepoint(s: &str) -> error::Result<char> {
     let v = u32::from_str_radix(s, 16).map_err(|_| error::InvalidCodepoint.build())?;
@@ -91,8 +94,9 @@ mod codepoint {
 }
 
 mod substitution {
-    use super::*;
     use std::str::FromStr;
+
+    use super::*;
 
     impl FromStr for SubstitutionType {
         type Err = &'static str;

@@ -1,7 +1,10 @@
-use crate::error;
+use std::fmt;
+use std::str::FromStr;
+
 use inquire::InquireError;
-use std::{fmt, str::FromStr};
 use thisctx::IntoError;
+
+use crate::error;
 
 pub fn prompt_yes_or_no(msg: &str, help: Option<&str>) -> error::Result<YesOrNo> {
     match inquire::CustomType::<YesOrNo>::new(msg)
