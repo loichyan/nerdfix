@@ -1,79 +1,92 @@
-note: Found obsolete icon U+F752
-  ┌─ tests/test-data.txt:1:24
-  │
-1 │ mdi-folder_multiple = ""
-  │                        ^ Icon 'mdi-folder_multiple' is marked as obsolete
-  │
-  = You could replace it with:
-        1. 󰉓 U+F0253 md-folder_multiple
-        2. 󱏓 U+F13D3 md-folder_star_multiple
-        3. 󰉔 U+F0254 md-folder_multiple_image
-        4. 󱑾 U+F147E md-folder_multiple_plus
+  ☞ Found obsolete icon U+F752
+   ╭─[1:24]
+ 1 │ mdi-folder_multiple = ""
+   ·                        ┬
+   ·                        ╰── Icon 'mdi-folder_multiple' is marked as obsolete
+ 2 │ md-folder_multiple  = "󰉓"
+   ╰────
+  help: You could replace it with:
+          1. 󰉓 U+F0253 md-folder_multiple
+          2. 󱏓 U+F13D3 md-folder_star_multiple
+          3. 󰉔 U+F0254 md-folder_multiple_image
+          4. 󱑾 U+F147E md-folder_multiple_plus
 
-note: Found obsolete icon U+F719
-  ┌─ tests/test-data.txt:4:26
-  │
-4 │ mdi-file_document_box = ""
-  │                          ^ Icon 'mdi-file_document_box' is marked as obsolete
-  │
-  = You could replace it with:
-        1. 󰈙 U+F0219 md-file_document
-        2. 󰷈 U+F0DC8 md-file_document_edit
-        3. 󱪝 U+F1A9D md-file_document_plus
-        4. 󱪗 U+F1A97 md-file_document_alert
+  ☞ Found obsolete icon U+F719
+   ╭─[4:26]
+ 3 │ 
+ 4 │ mdi-file_document_box = ""
+   ·                          ┬
+   ·                          ╰── Icon 'mdi-file_document_box' is marked as obsolete
+ 5 │ md-file_document      = "󰈙"
+   ╰────
+  help: You could replace it with:
+          1. 󰈙 U+F0219 md-file_document
+          2. 󰷈 U+F0DC8 md-file_document_edit
+          3. 󱪝 U+F1A9D md-file_document_plus
+          4. 󱪗 U+F1A97 md-file_document_alert
 
-note: Found obsolete icon U+F719
-  ┌─ tests/test-data.txt:8:26
-  │
-8 │ mdi-file_document_box = ""
-  │                          ^ Icon 'mdi-file_document_box' is marked as obsolete
-  │
-  = You could replace it with:
-        1. 󰈙 U+F0219 md-file_document
-        2. 󰷈 U+F0DC8 md-file_document_edit
-        3. 󱪝 U+F1A9D md-file_document_plus
-        4. 󱪗 U+F1A97 md-file_document_alert
+  ☞ Found obsolete icon U+F719
+   ╭─[8:26]
+ 7 │ # Test autofix from histroy
+ 8 │ mdi-file_document_box = ""
+   ·                          ┬
+   ·                          ╰── Icon 'mdi-file_document_box' is marked as obsolete
+ 9 │ md-file_document      = "󰈙"
+   ╰────
+  help: You could replace it with:
+          1. 󰈙 U+F0219 md-file_document
+          2. 󰷈 U+F0DC8 md-file_document_edit
+          3. 󱪝 U+F1A9D md-file_document_plus
+          4. 󱪗 U+F1A97 md-file_document_alert
 
-note: Found obsolete icon U+F7A1
-   ┌─ tests/test-data.txt:11:12
-   │
-11 │ mdi-git = "",
-   │            ^ Icon 'mdi-git' is marked as obsolete
-   │
-   = You could replace it with:
-         1. 󰊢 U+F02A2 md-git
-         2.  U+0E65D seti-git
+  ☞ Found obsolete icon U+F7A1
+    ╭─[11:12]
+ 10 │ 
+ 11 │ mdi-git = "",
+    ·            ┬
+    ·            ╰── Icon 'mdi-git' is marked as obsolete
+ 12 │ md-git  = "󰊢"
+    ╰────
+  help: You could replace it with:
+          1. 󰊢 U+F02A2 md-git
+          2.  U+0E65D seti-git
 
-note: Found obsolete icon U+F9E8
-   ┌─ tests/test-data.txt:14:12
-   │
-14 │ mdi-tab = "裡"
-   │            ^^ Icon 'mdi-tab' is marked as obsolete
-   │
-   = You could replace it with:
-         1. 󰓩 U+F04E9 md-tab
+  ☞ Found obsolete icon U+F9E8
+    ╭─[14:12]
+ 13 │ 
+ 14 │ mdi-tab = "裡"
+    ·            ─┬
+    ·             ╰── Icon 'mdi-tab' is marked as obsolete
+ 15 │ md-tab  = "󰓩"
+    ╰────
+  help: You could replace it with:
+          1. 󰓩 U+F04E9 md-tab
 
-note: Found obsolete icon U+FC0A
-   ┌─ tests/test-data.txt:17:24
-   │
-17 │ mdi-rhombus_outline = "ﰊ"
-   │                        ^ Icon 'mdi-rhombus_outline' is marked as obsolete
-   │
-   = You could replace it with:
-         1. 󰜌 U+F070C md-rhombus_outline
-         2. 󰮦 U+F0BA6 md-help_rhombus_outline
-         3. 󱇏 U+F11CF md-alert_rhombus_outline
-         4. 󱓝 U+F14DD md-rhombus_split_outline
+  ☞ Found obsolete icon U+FC0A
+    ╭─[17:24]
+ 16 │ 
+ 17 │ mdi-rhombus_outline = "ﰊ"
+    ·                        ┬
+    ·                        ╰── Icon 'mdi-rhombus_outline' is marked as obsolete
+ 18 │ md-rhombus_outline  = "󰜌"
+    ╰────
+  help: You could replace it with:
+          1. 󰜌 U+F070C md-rhombus_outline
+          2. 󰮦 U+F0BA6 md-help_rhombus_outline
+          3. 󱇏 U+F11CF md-alert_rhombus_outline
+          4. 󱓝 U+F14DD md-rhombus_split_outline
 
-note: Found obsolete icon U+F554
-   ┌─ tests/test-data.txt:20:26
-   │
-20 │ mdi-arrow_right_thick = ""
-   │                          ^ Icon 'mdi-arrow_right_thick' is marked as obsolete
-   │
-   = You could replace it with:
-         1. 󰁕 U+F0055 md-arrow_right_thick
-         2. 󰧆 U+F09C6 md-arrow_top_right_thick
-         3. 󰦺 U+F09BA md-arrow_bottom_right_thick
-         4. 󱦰 U+F19B0 md-arrow_right_thin
+  ☞ Found obsolete icon U+F554
+    ╭─[20:26]
+ 19 │ 
+ 20 │ mdi-arrow_right_thick = ""
+    ·                          ┬
+    ·                          ╰── Icon 'mdi-arrow_right_thick' is marked as obsolete
+ 21 │ md-arrow_right_thick  = "󰁕"
+    ╰────
+  help: You could replace it with:
+          1. 󰁕 U+F0055 md-arrow_right_thick
+          2. 󰧆 U+F09C6 md-arrow_top_right_thick
+          3. 󰦺 U+F09BA md-arrow_bottom_right_thick
+          4. 󱦰 U+F19B0 md-arrow_right_thin
 

@@ -12,13 +12,12 @@ shadow_rs::shadow!(shadow);
 
 use clap::Parser;
 use cli::{Command, IoPath, Source};
-use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::prelude::*;
-use util::{LogStatus, ResultExt};
+use util::{LogStatus, ResultExt as _};
 use walkdir::WalkDir;
 
 static ICONS: &str = include_str!("./icons.json");
@@ -48,7 +47,7 @@ fn walk<'a>(
                     .flat_map(|w| w.into_iter())
                 })
                 .filter_map(|entry| {
-                    tryb!({
+                    tri!({
                         let path = entry?.into_path();
                         if path.is_file() {
                             Ok(Some(path))
@@ -108,15 +107,17 @@ fn main_impl() -> error::Result<()> {
             format,
             source,
             recursive,
+            include_binary,
         } => {
             let rt = rt.build();
             let mut context = CheckerContext {
                 format,
-                writer: StandardStream::stdout(ColorChoice::Always),
+                writer: Box::new(std::io::stdout()),
+                include_binary,
                 ..Default::default()
             };
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
-                tryb!({
+                tri!({
                     let source = source?;
                     rt.check(&mut context, &source.0, None)
                 })
@@ -129,6 +130,7 @@ fn main_impl() -> error::Result<()> {
             write,
             select_first,
             recursive,
+            include_binary,
             source,
         } => {
             if yes {
@@ -138,11 +140,12 @@ fn main_impl() -> error::Result<()> {
             let mut context = CheckerContext {
                 write,
                 select_first,
+                include_binary,
                 ..Default::default()
             };
             let mut buffer = String::new();
             for source in walk(source, recursive) {
-                tryb!({
+                tri!({
                     let source = source?;
                     let Source(input, output) = &source;
                     let output = output.as_ref().unwrap_or(input);

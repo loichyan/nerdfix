@@ -1,24 +1,22 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::io::Write;
 use std::rc::Rc;
 
-use codespan_reporting::diagnostic::{Diagnostic, Label};
-use codespan_reporting::files::SimpleFiles;
-use codespan_reporting::term;
-use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
+use miette::{Diagnostic, ReportHandler};
 use once_cell::unsync::{Lazy, OnceCell};
 use serde::Serialize;
 use thisctx::IntoError;
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::autocomplete::Autocompleter;
 use crate::cli::{IoPath, OutputFormat, UserInput};
 use crate::error;
 use crate::icon::{Database, Icon, Substitution, SubstitutionType, Substitutions};
-use crate::util::NGramSearcherExt;
+use crate::util::NGramSearcherExt as _;
 
 const ARITY: usize = 3;
 const PAD_LEN: usize = 2;
@@ -121,9 +119,17 @@ impl Runtime {
         mut output: Option<&mut String>,
     ) -> error::Result<bool> {
         info!("Check input file from '{}'", input);
-        let content = input.read_to_string()?;
-        let file_id = context.files.add(input.to_string(), content);
-        let content = context.files.get(file_id).unwrap().source();
+        let bytes = input.read_all()?;
+        if !context.include_binary
+            && matches!(
+                content_inspector::inspect(&bytes),
+                content_inspector::ContentType::BINARY
+            )
+        {
+            warn!("Skip binary file '{}'", input);
+            return Ok(false);
+        }
+        let content = String::from_utf8_lossy(&bytes);
         let mut updated = false;
         for (start, mut ch) in content.char_indices() {
             if let Some(icon) = self
@@ -136,16 +142,20 @@ impl Runtime {
                 let candidates = Lazy::new(|| self.get_candidates(icon));
                 match context.format {
                     OutputFormat::Console => {
-                        let diag = Diagnostic::new(Severity::Info.into())
-                            .with_message(format!(
-                                "Found obsolete icon U+{:X}",
-                                icon.codepoint as u32
-                            ))
-                            .with_labels(vec![Label::primary(file_id, start..end).with_message(
-                                format!("Icon '{}' is marked as obsolete", icon.name),
-                            )])
-                            .with_notes(self.diagnostic_notes(&candidates)?);
-                        term::emit(&mut context.writer, &context.config, &context.files, &diag)?;
+                        let diag = error::ObsoleteIcon {
+                            source_code: &content,
+                            icon,
+                            span: (start, end),
+                            candidates: &candidates,
+                        };
+                        writeln!(
+                            &mut context.writer,
+                            "{:?}",
+                            DiagReporter {
+                                handler: &*context.handler,
+                                diag: &diag,
+                            }
+                        )?;
                     }
                     OutputFormat::Json => {
                         let diag = DiagOutput {
@@ -226,25 +236,6 @@ impl Runtime {
                 let name = icon.name.strip_prefix(&rep.from)?;
                 self.icons.get(&format!("{}{name}", rep.to))
             }))
-    }
-
-    fn diagnostic_notes(&self, candidates: &[&Icon]) -> error::Result<Vec<String>> {
-        let mut notes = Vec::default();
-
-        if !candidates.is_empty() {
-            let mut s = String::from("You could replace it with:\n");
-            for (i, &candi) in candidates.iter().enumerate() {
-                s.push_str(&format!(
-                    "    {}. {} U+{:05X} {}\n",
-                    i + 1,
-                    candi.codepoint,
-                    candi.codepoint as u32,
-                    &candi.name
-                ));
-            }
-            notes.push(s);
-        }
-        Ok(notes)
     }
 
     pub fn prompt_input_icon(&self, candidates: Option<&[&Icon]>) -> error::Result<Option<char>> {
@@ -357,25 +348,25 @@ impl Runtime {
 }
 
 pub struct CheckerContext {
-    pub files: SimpleFiles<String, String>,
-    pub writer: StandardStream,
-    pub config: term::Config,
+    pub writer: Box<dyn std::io::Write>,
+    pub handler: Box<dyn ReportHandler>,
     pub history: HashMap<char, char>,
     pub format: OutputFormat,
     pub write: bool,
     pub select_first: bool,
+    pub include_binary: bool,
 }
 
 impl Default for CheckerContext {
     fn default() -> Self {
         Self {
-            files: SimpleFiles::new(),
-            writer: StandardStream::stderr(ColorChoice::Always),
-            config: term::Config::default(),
+            writer: Box::new(std::io::stderr()),
+            handler: Box::new(miette::MietteHandler::new()),
             history: HashMap::default(),
             format: OutputFormat::default(),
             write: false,
             select_first: false,
+            include_binary: false,
         }
     }
 }
@@ -404,16 +395,25 @@ pub enum Severity {
     Error,
     Warning,
     Info,
-    Hint,
 }
 
-impl From<Severity> for codespan_reporting::diagnostic::Severity {
+impl From<Severity> for miette::Severity {
     fn from(value: Severity) -> Self {
         match value {
             Severity::Error => Self::Error,
             Severity::Warning => Self::Warning,
-            Severity::Info => Self::Note,
-            Severity::Hint => Self::Help,
+            Severity::Info => Self::Advice,
         }
+    }
+}
+
+struct DiagReporter<'a> {
+    handler: &'a dyn ReportHandler,
+    diag: &'a dyn Diagnostic,
+}
+
+impl fmt::Debug for DiagReporter<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.handler.debug(self.diag, f)
     }
 }

@@ -2,9 +2,9 @@
 #![cfg(unix)]
 
 use core::fmt;
-use std::env;
 use std::path::Path;
 use std::process::{Command, Output};
+use std::{env, fs};
 
 use assert_cmd::assert::Assert;
 use assert_cmd::prelude::*;
@@ -74,11 +74,11 @@ fn cmp_or_override(file: &str) -> impl '_ + Predicate<[u8]> {
     let path = Path::new("tests").join(file);
     if matches!(env::var("NERDFIX_TEST").as_deref(), Ok("overwrite")) {
         BoxedPredicate::new(predicate::function(move |expected: &[u8]| {
-            std::fs::write(&path, expected).unwrap();
+            fs::write(&path, expected).unwrap();
             true
         }))
     } else {
-        let expected = std::fs::read_to_string(path).unwrap();
+        let expected = fs::read_to_string(path).unwrap();
         BoxedPredicate::new(predicate::str::diff(expected).from_utf8())
     }
 }
