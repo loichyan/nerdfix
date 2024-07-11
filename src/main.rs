@@ -12,13 +12,12 @@ shadow_rs::shadow!(shadow);
 
 use clap::Parser;
 use cli::{Command, IoPath, Source};
-use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use prompt::YesOrNo;
 use runtime::{CheckerContext, Runtime};
 use thisctx::WithContext;
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::prelude::*;
-use util::{LogStatus, ResultExt};
+use util::{LogStatus, ResultExt as _};
 use walkdir::WalkDir;
 
 static ICONS: &str = include_str!("./icons.json");
@@ -112,7 +111,7 @@ fn main_impl() -> error::Result<()> {
             let rt = rt.build();
             let mut context = CheckerContext {
                 format,
-                writer: StandardStream::stdout(ColorChoice::Always),
+                writer: Box::new(std::io::stdout()),
                 ..Default::default()
             };
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {

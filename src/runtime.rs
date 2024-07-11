@@ -1,14 +1,10 @@
 use std::collections::HashMap;
-use std::io::Write;
 use std::rc::Rc;
 
-use codespan_reporting::diagnostic::{Diagnostic, Label};
-use codespan_reporting::files::SimpleFiles;
-use codespan_reporting::term;
-use codespan_reporting::term::termcolor::{ColorChoice, StandardStream};
 use indexmap::IndexMap;
 use inquire::InquireError;
 use itertools::Itertools;
+use miette::{miette, LabeledSpan};
 use once_cell::unsync::{Lazy, OnceCell};
 use serde::Serialize;
 use thisctx::IntoError;
@@ -18,7 +14,7 @@ use crate::autocomplete::Autocompleter;
 use crate::cli::{IoPath, OutputFormat, UserInput};
 use crate::error;
 use crate::icon::{Database, Icon, Substitution, SubstitutionType, Substitutions};
-use crate::util::NGramSearcherExt;
+use crate::util::NGramSearcherExt as _;
 
 const ARITY: usize = 3;
 const PAD_LEN: usize = 2;
@@ -122,8 +118,6 @@ impl Runtime {
     ) -> error::Result<bool> {
         info!("Check input file from '{}'", input);
         let content = input.read_to_string()?;
-        let file_id = context.files.add(input.to_string(), content);
-        let content = context.files.get(file_id).unwrap().source();
         let mut updated = false;
         for (start, mut ch) in content.char_indices() {
             if let Some(icon) = self
@@ -136,16 +130,18 @@ impl Runtime {
                 let candidates = Lazy::new(|| self.get_candidates(icon));
                 match context.format {
                     OutputFormat::Console => {
-                        let diag = Diagnostic::new(Severity::Info.into())
-                            .with_message(format!(
-                                "Found obsolete icon U+{:X}",
-                                icon.codepoint as u32
-                            ))
-                            .with_labels(vec![Label::primary(file_id, start..end).with_message(
+                        let diag = miette!(
+                            severity = Severity::Info,
+                            labels = vec![LabeledSpan::at(
+                                start..end,
                                 format!("Icon '{}' is marked as obsolete", icon.name),
-                            )])
-                            .with_notes(self.diagnostic_notes(&candidates)?);
-                        term::emit(&mut context.writer, &context.config, &context.files, &diag)?;
+                            )],
+                            help = self.diagnostic_notes(&candidates),
+                            "Found obsolete icon U+{:X}",
+                            icon.codepoint as u32,
+                        )
+                        .with_source_code(content.clone());
+                        writeln!(&mut context.writer, "{:?}", diag)?;
                     }
                     OutputFormat::Json => {
                         let diag = DiagOutput {
@@ -228,23 +224,25 @@ impl Runtime {
             }))
     }
 
-    fn diagnostic_notes(&self, candidates: &[&Icon]) -> error::Result<Vec<String>> {
-        let mut notes = Vec::default();
+    fn diagnostic_notes(&self, candidates: &[&Icon]) -> String {
+        use std::fmt::Write;
+        let mut notes = String::from("You could replace it with:\n");
 
-        if !candidates.is_empty() {
-            let mut s = String::from("You could replace it with:\n");
-            for (i, &candi) in candidates.iter().enumerate() {
-                s.push_str(&format!(
-                    "    {}. {} U+{:05X} {}\n",
-                    i + 1,
-                    candi.codepoint,
-                    candi.codepoint as u32,
-                    &candi.name
-                ));
-            }
-            notes.push(s);
+        for (i, &candi) in candidates.iter().enumerate() {
+            writeln!(
+                &mut notes,
+                "  {}. {} U+{:05X} {}",
+                i + 1,
+                candi.codepoint,
+                candi.codepoint as u32,
+                &candi.name
+            )
+            .unwrap();
         }
-        Ok(notes)
+        // Remove trailing newline.
+        notes.pop();
+
+        notes
     }
 
     pub fn prompt_input_icon(&self, candidates: Option<&[&Icon]>) -> error::Result<Option<char>> {
@@ -357,9 +355,7 @@ impl Runtime {
 }
 
 pub struct CheckerContext {
-    pub files: SimpleFiles<String, String>,
-    pub writer: StandardStream,
-    pub config: term::Config,
+    pub writer: Box<dyn std::io::Write>,
     pub history: HashMap<char, char>,
     pub format: OutputFormat,
     pub write: bool,
@@ -369,9 +365,7 @@ pub struct CheckerContext {
 impl Default for CheckerContext {
     fn default() -> Self {
         Self {
-            files: SimpleFiles::new(),
-            writer: StandardStream::stderr(ColorChoice::Always),
-            config: term::Config::default(),
+            writer: Box::new(std::io::stderr()),
             history: HashMap::default(),
             format: OutputFormat::default(),
             write: false,
@@ -404,16 +398,14 @@ pub enum Severity {
     Error,
     Warning,
     Info,
-    Hint,
 }
 
-impl From<Severity> for codespan_reporting::diagnostic::Severity {
+impl From<Severity> for miette::Severity {
     fn from(value: Severity) -> Self {
         match value {
             Severity::Error => Self::Error,
             Severity::Warning => Self::Warning,
-            Severity::Info => Self::Note,
-            Severity::Hint => Self::Help,
+            Severity::Info => Self::Advice,
         }
     }
 }

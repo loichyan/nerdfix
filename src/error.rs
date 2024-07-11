@@ -26,12 +26,6 @@ pub enum Error {
         #[source]
         serde_json::Error,
     ),
-    #[error("Failed when reporting diagnostics")]
-    Reporter(
-        #[from]
-        #[source]
-        codespan_reporting::files::Error,
-    ),
     #[error("Failed when prompting")]
     Prompt(
         #[from]
