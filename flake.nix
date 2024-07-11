@@ -8,30 +8,32 @@
     };
   };
 
-  outputs = { nixpkgs, flake-utils, ... } @ inputs:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    { nixpkgs, flake-utils, ... }@inputs:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = with inputs; [
-            inputs.fenix.overlays.default
-          ];
+          overlays = [ inputs.fenix.overlays.default ];
         };
-        inherit (pkgs) fenix ra-flake;
-        inherit (pkgs.lib) importTOML;
+        inherit (pkgs) fenix lib;
 
         # Rust toolchain
-        rustChannel = (importTOML ./rust-toolchain).toolchain.channel;
         rustToolchain = fenix.toolchainOf {
-          channel = rustChannel;
+          channel = (lib.importTOML ./rust-toolchain.toml).toolchain.channel;
           sha256 = "sha256-gdYqng0y9iHYzYPAdkC/ka3DRny3La/S5G8ASj0Ayyc=";
         };
+
         # For development
-        rust-dev = fenix.combine (with rustToolchain; [
-          defaultToolchain
-          rust-src
-          rust-analyzer
-        ]);
+        rust-dev = fenix.combine (
+          with rustToolchain;
+          [
+            defaultToolchain
+            rust-src
+          ]
+        );
+
         # For building packages
         rust-minimal = rustToolchain.minimalToolchain;
         rustPlatform = pkgs.makeRustPlatform {
@@ -46,11 +48,7 @@
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
         };
-        devShells.default = with pkgs; mkShell {
-          nativeBuildInputs = [
-            rust-dev
-          ];
-        };
+        devShells.default = with pkgs; mkShell { packages = [ rust-dev ]; };
       }
     );
 }
