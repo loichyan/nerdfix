@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fmt, fs, io};
 
+use bytesize::ByteSize;
 use clap::{Parser, Subcommand, ValueEnum};
 use shadow_rs::formatcp;
 use thisctx::IntoError;
@@ -17,6 +18,8 @@ const V_PATH: &str = "PATH";
 const V_SOURCE: &str = "SOURCE";
 const V_SUBSTITUTION: &str = "SUBSTITUTION";
 const V_FORMAT: &str = "FORMAT";
+const V_SIZE: &str = "SIZE";
+const DEFAULT_SIZE: &str = "16MB";
 const INDEX_REV: &str = include_str!("index-rev");
 const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, INDEX_REV);
 
@@ -96,9 +99,9 @@ pub enum Command {
         /// Do not skip binary files.
         #[arg(long)]
         include_binary: bool,
-        /// Do not skip large files.
-        #[arg(long)]
-        include_large: bool,
+        /// Set the file size limit (0 to disable it).
+        #[arg(long, value_name= V_SIZE, default_value = DEFAULT_SIZE)]
+        size_limit: ByteSize,
         /// Path(s) of files to check.
         #[arg(value_name = V_PATH)]
         source: Vec<IoPath>,
@@ -120,9 +123,9 @@ pub enum Command {
         /// Do not skip binary files.
         #[arg(long)]
         include_binary: bool,
-        /// Do not skip large files.
-        #[arg(long)]
-        include_large: bool,
+        /// Set the file size limit (0 to disable it).
+        #[arg(long, value_name= V_SIZE, default_value = DEFAULT_SIZE)]
+        size_limit: ByteSize,
         /// Path tuple(s) of files to read from and write to.
         ///
         /// Each tuple is an input path followed by an optional output path,
