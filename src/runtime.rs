@@ -23,6 +23,7 @@ const PAD_LEN: usize = 2;
 const WARP: f32 = 3.0;
 const THRESHOLD: f32 = 0.7;
 const MAX_CHOICES: usize = 4;
+const MAX_MEM: u64 = 1024 * 1024 * 1024 * 8;
 
 pub type NGram = noodler::NGram<(String, usize)>;
 
@@ -33,6 +34,7 @@ pub struct Runtime {
     corpus: OnceCell<Rc<NGram>>,
     exact_sub: HashMap<String, String>,
     prefix_sub: Vec<Substitution>,
+    file_size_limit: OnceCell<u64>,
 }
 
 #[derive(Default)]
@@ -112,6 +114,18 @@ impl Runtime {
         Ok(())
     }
 
+    pub fn file_size_limit(&self) -> u64 {
+        *self.file_size_limit.get_or_init(|| {
+            let mut sys = sysinfo::System::new();
+            sys.refresh_memory();
+            let mut max_mem = sys.total_memory();
+            if let Some(limit) = sys.cgroup_limits() {
+                max_mem = limit.total_memory;
+            }
+            std::cmp::min(max_mem * 3 / 4, MAX_MEM)
+        })
+    }
+
     pub fn check(
         &self,
         context: &mut CheckerContext,
@@ -119,6 +133,11 @@ impl Runtime {
         mut output: Option<&mut String>,
     ) -> error::Result<bool> {
         info!("Check input file from '{}'", input);
+
+        if !context.include_large && input.file_size()?.unwrap_or(0) >= self.file_size_limit() {
+            warn!("Skip large file '{}'", input);
+            return Ok(false);
+        }
 
         let mut reader = input.open()?;
         let Some(mut line) = reader.next_line()? else {
@@ -370,6 +389,7 @@ pub struct CheckerContext {
     pub write: bool,
     pub select_first: bool,
     pub include_binary: bool,
+    pub include_large: bool,
 }
 
 impl Default for CheckerContext {
@@ -382,6 +402,7 @@ impl Default for CheckerContext {
             write: false,
             select_first: false,
             include_binary: false,
+            include_large: false,
         }
     }
 }

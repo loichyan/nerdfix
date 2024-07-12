@@ -96,6 +96,9 @@ pub enum Command {
         /// Do not skip binary files.
         #[arg(long)]
         include_binary: bool,
+        /// Do not skip large files.
+        #[arg(long)]
+        include_large: bool,
         /// Path(s) of files to check.
         #[arg(value_name = V_PATH)]
         source: Vec<IoPath>,
@@ -117,6 +120,9 @@ pub enum Command {
         /// Do not skip binary files.
         #[arg(long)]
         include_binary: bool,
+        /// Do not skip large files.
+        #[arg(long)]
+        include_large: bool,
         /// Path tuple(s) of files to read from and write to.
         ///
         /// Each tuple is an input path followed by an optional output path,
@@ -186,6 +192,18 @@ impl fmt::Display for IoPath {
 }
 
 impl IoPath {
+    pub fn metadata(&self) -> io::Result<Option<fs::Metadata>> {
+        if let IoPath::Path(path) = self {
+            fs::metadata(path).map(Some)
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn file_size(&self) -> io::Result<Option<u64>> {
+        self.metadata().map(|t| t.map(|m| m.len()))
+    }
+
     fn get_reader(&self) -> io::Result<Box<dyn io::BufRead>> {
         Ok(match self {
             IoPath::Stdio => Box::new(BufReader::new(io::stdin())) as _,
