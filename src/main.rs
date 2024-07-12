@@ -65,7 +65,7 @@ fn walk<'a>(
 fn main_impl() -> error::Result<()> {
     let args = cli::Cli::parse();
 
-    let lv = match args.verbose - args.quiet {
+    let lv = match args.verbose.saturating_sub(args.quiet) {
         0 => Level::ERROR,
         1 => Level::WARN,
         2 => Level::INFO,
