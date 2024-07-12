@@ -4,6 +4,7 @@ mod autocomplete;
 mod cli;
 mod error;
 mod icon;
+mod input;
 mod parser;
 mod prompt;
 mod runtime;
@@ -108,12 +109,14 @@ fn main_impl() -> error::Result<()> {
             source,
             recursive,
             include_binary,
+            size_limit,
         } => {
             let rt = rt.build();
             let mut context = CheckerContext {
                 format,
                 writer: Box::new(std::io::stdout()),
                 include_binary,
+                size_limit: size_limit.as_u64(),
                 ..Default::default()
             };
             for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
@@ -131,6 +134,7 @@ fn main_impl() -> error::Result<()> {
             select_first,
             recursive,
             include_binary,
+            size_limit,
             source,
         } => {
             if yes {
@@ -141,6 +145,7 @@ fn main_impl() -> error::Result<()> {
                 write,
                 select_first,
                 include_binary,
+                size_limit: size_limit.as_u64(),
                 ..Default::default()
             };
             let mut buffer = String::new();

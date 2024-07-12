@@ -1,20 +1,25 @@
 //! Command line arguments parser.
 
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fmt, fs, io};
 
+use bytesize::ByteSize;
 use clap::{Parser, Subcommand, ValueEnum};
 use shadow_rs::formatcp;
 use thisctx::IntoError;
 
 use crate::icon::Substitution;
+use crate::input::InputReader;
 use crate::{error, shadow};
 
 const V_PATH: &str = "PATH";
 const V_SOURCE: &str = "SOURCE";
 const V_SUBSTITUTION: &str = "SUBSTITUTION";
 const V_FORMAT: &str = "FORMAT";
+const V_SIZE: &str = "SIZE";
+const DEFAULT_SIZE: &str = "16MB";
 const INDEX_REV: &str = include_str!("index-rev");
 const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, INDEX_REV);
 
@@ -94,6 +99,9 @@ pub enum Command {
         /// Do not skip binary files.
         #[arg(long)]
         include_binary: bool,
+        /// Set the file size limit (0 to disable it).
+        #[arg(long, value_name= V_SIZE, default_value = DEFAULT_SIZE)]
+        size_limit: ByteSize,
         /// Path(s) of files to check.
         #[arg(value_name = V_PATH)]
         source: Vec<IoPath>,
@@ -115,6 +123,9 @@ pub enum Command {
         /// Do not skip binary files.
         #[arg(long)]
         include_binary: bool,
+        /// Set the file size limit (0 to disable it).
+        #[arg(long, value_name= V_SIZE, default_value = DEFAULT_SIZE)]
+        size_limit: ByteSize,
         /// Path tuple(s) of files to read from and write to.
         ///
         /// Each tuple is an input path followed by an optional output path,
@@ -184,18 +195,31 @@ impl fmt::Display for IoPath {
 }
 
 impl IoPath {
-    pub fn read_all(&self) -> io::Result<Vec<u8>> {
-        let mut buf = Vec::new();
-        match self {
-            IoPath::Stdio => _ = io::Read::read_to_end(&mut io::stdin(), &mut buf)?,
-            IoPath::Path(path) => _ = io::Read::read_to_end(&mut fs::File::open(path)?, &mut buf)?,
-        };
-        Ok(buf)
+    pub fn metadata(&self) -> io::Result<Option<fs::Metadata>> {
+        if let IoPath::Path(path) = self {
+            fs::metadata(path).map(Some)
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn file_size(&self) -> io::Result<Option<u64>> {
+        self.metadata().map(|t| t.map(|m| m.len()))
+    }
+
+    fn get_reader(&self) -> io::Result<Box<dyn io::BufRead>> {
+        Ok(match self {
+            IoPath::Stdio => Box::new(BufReader::new(io::stdin())) as _,
+            IoPath::Path(path) => Box::new(BufReader::new(fs::File::open(path)?)) as _,
+        })
+    }
+
+    pub fn open(&self) -> io::Result<InputReader> {
+        self.get_reader().map(InputReader::new)
     }
 
     pub fn read_to_string(&self) -> io::Result<String> {
-        self.read_all()
-            .map(|s| String::from_utf8_lossy(&s).as_ref().to_owned())
+        self.get_reader().and_then(io::read_to_string)
     }
 
     pub fn write_str(&self, content: &str) -> io::Result<()> {

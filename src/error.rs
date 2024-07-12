@@ -5,6 +5,7 @@ use thisctx::WithContext;
 use thiserror::Error;
 
 use crate::icon::Icon;
+use crate::input::InputLine;
 use crate::runtime::Severity;
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -38,6 +39,12 @@ pub enum Error {
         #[source]
         inquire::InquireError,
     ),
+    #[error("Invalid UTF-8 input")]
+    Utf8(
+        #[from]
+        #[source]
+        std::str::Utf8Error,
+    ),
     #[error("Invalid input")]
     InvalidInput,
     #[error("Invalid codepoint")]
@@ -50,7 +57,7 @@ pub enum Error {
 
 #[derive(Debug, Error)]
 pub(crate) struct ObsoleteIcon<'a> {
-    pub source_code: &'a str,
+    pub source_code: &'a InputLine<'a>,
     pub icon: &'a Icon,
     pub span: (usize, usize),
     pub candidates: &'a [&'a Icon],
@@ -64,7 +71,7 @@ impl fmt::Display for ObsoleteIcon<'_> {
 
 impl Diagnostic for ObsoleteIcon<'_> {
     fn source_code(&self) -> Option<&dyn miette::SourceCode> {
-        Some(&self.source_code)
+        Some(self.source_code)
     }
 
     fn severity(&self) -> Option<miette::Severity> {
