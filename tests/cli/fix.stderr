@@ -1,6 +1,6 @@
- INFO Check input file from 'tests/test-data.txt'
+ INFO Check input from 'tests/test-data.txt'
   ☞ Found obsolete icon U+F752
-   ╭─[1:24]
+   ╭─[tests/test-data.txt:1:24]
  1 │ mdi-folder_multiple = ""
    ·                        ┬
    ·                        ╰── Icon 'mdi-folder_multiple' is marked as obsolete
@@ -14,7 +14,7 @@
 
 # Autofix with substitution '󰉓'
   ☞ Found obsolete icon U+F719
-   ╭─[4:26]
+   ╭─[tests/test-data.txt:4:26]
  3 │ 
  4 │ mdi-file_document_box = ""
    ·                          ┬
@@ -29,7 +29,7 @@
 
 # Autofix with the first suggestion '󰈙'
   ☞ Found obsolete icon U+F719
-   ╭─[8:26]
+   ╭─[tests/test-data.txt:8:26]
  7 │ # Test autofix from histroy
  8 │ mdi-file_document_box = ""
    ·                          ┬
@@ -44,7 +44,7 @@
 
 # Autofix with the first suggestion '󰈙'
   ☞ Found obsolete icon U+F7A1
-    ╭─[11:12]
+    ╭─[tests/test-data.txt:11:12]
  10 │ 
  11 │ mdi-git = "",
     ·            ┬
@@ -57,7 +57,7 @@
 
 # Autofix with substitution '󰊢'
   ☞ Found obsolete icon U+F9E8
-    ╭─[14:12]
+    ╭─[tests/test-data.txt:14:12]
  13 │ 
  14 │ mdi-tab = "裡"
     ·            ─┬
@@ -69,7 +69,7 @@
 
 # Autofix with substitution '󰓩'
   ☞ Found obsolete icon U+FC0A
-    ╭─[17:24]
+    ╭─[tests/test-data.txt:17:24]
  16 │ 
  17 │ mdi-rhombus_outline = "ﰊ"
     ·                        ┬
@@ -84,7 +84,7 @@
 
 # Autofix with substitution '󰜌'
   ☞ Found obsolete icon U+F554
-    ╭─[20:26]
+    ╭─[tests/test-data.txt:20:26]
  19 │ 
  20 │ mdi-arrow_right_thick = ""
     ·                          ┬

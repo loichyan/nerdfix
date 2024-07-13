@@ -1,5 +1,5 @@
   ☞ Found obsolete icon U+F719
-   ╭─[4:26]
+   ╭─[tests/test-data.txt:4:26]
  3 │ 
  4 │ mdi-file_document_box = ""
    ·                          ┬
@@ -10,7 +10,7 @@
           1. 󰈙 U+F0219 md-file_document
 
   ☞ Found obsolete icon U+F719
-   ╭─[8:26]
+   ╭─[tests/test-data.txt:8:26]
  7 │ # Test autofix from histroy
  8 │ mdi-file_document_box = ""
    ·                          ┬

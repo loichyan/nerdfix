@@ -1,9 +1,10 @@
 use std::fmt;
 
-use miette::{Diagnostic, LabeledSpan};
+use miette::{Diagnostic, LabeledSpan, MietteSpanContents, SourceCode, SpanContents};
 use thisctx::WithContext;
 use thiserror::Error;
 
+use crate::cli::IoPath;
 use crate::icon::Icon;
 use crate::input::InputLine;
 use crate::runtime::Severity;
@@ -57,7 +58,8 @@ pub enum Error {
 
 #[derive(Debug, Error)]
 pub(crate) struct ObsoleteIcon<'a> {
-    pub source_code: &'a InputLine<'a>,
+    pub input: &'a InputLine<'a>,
+    pub path: &'a IoPath,
     pub icon: &'a Icon,
     pub span: (usize, usize),
     pub candidates: &'a [&'a Icon],
@@ -69,9 +71,28 @@ impl fmt::Display for ObsoleteIcon<'_> {
     }
 }
 
+impl SourceCode for ObsoleteIcon<'_> {
+    fn read_span<'a>(
+        &'a self,
+        span: &miette::SourceSpan,
+        lines_before: usize,
+        lines_after: usize,
+    ) -> std::result::Result<Box<dyn SpanContents<'a> + 'a>, miette::MietteError> {
+        let contents = self.input.read_span(span, lines_before, lines_after)?;
+        Ok(Box::new(MietteSpanContents::new_named(
+            self.path.to_string(),
+            contents.data(),
+            *contents.span(),
+            contents.line(),
+            contents.column(),
+            contents.line_count(),
+        )))
+    }
+}
+
 impl Diagnostic for ObsoleteIcon<'_> {
-    fn source_code(&self) -> Option<&dyn miette::SourceCode> {
-        Some(self.source_code)
+    fn source_code(&self) -> Option<&dyn SourceCode> {
+        Some(self)
     }
 
     fn severity(&self) -> Option<miette::Severity> {

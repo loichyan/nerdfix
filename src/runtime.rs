@@ -115,24 +115,24 @@ impl Runtime {
     pub fn check(
         &self,
         context: &mut CheckerContext,
-        input: &IoPath,
+        path: &IoPath,
         mut output: Option<&mut String>,
     ) -> error::Result<bool> {
-        info!("Check input file from '{}'", input);
+        info!("Check input from '{}'", path);
 
-        if context.size_limit != 0 && input.file_size()?.unwrap_or(0) >= context.size_limit {
-            warn!("Skip large file '{}'", input);
+        if context.size_limit != 0 && path.file_size()?.unwrap_or(0) >= context.size_limit {
+            warn!("Skip large file '{}'", path);
             return Ok(false);
         }
 
-        let mut reader = input.open()?;
+        let mut reader = path.open()?;
         let Some(mut line) = reader.next_line()? else {
             return Ok(false);
         };
 
         if !context.include_binary && line.content_type() == content_inspector::ContentType::BINARY
         {
-            warn!("Skip binary file '{}'", input);
+            warn!("Skip binary file '{}'", path);
             return Ok(false);
         }
 
@@ -153,7 +153,8 @@ impl Runtime {
                     match context.format {
                         OutputFormat::Console => {
                             let diag = error::ObsoleteIcon {
-                                source_code: &line,
+                                input: &line,
+                                path,
                                 icon,
                                 span: (start, end),
                                 candidates: &candidates,
@@ -170,7 +171,7 @@ impl Runtime {
                         OutputFormat::Json => {
                             let diag = DiagOutput {
                                 severity: Severity::Info,
-                                path: input.to_string(),
+                                path: path.to_string(),
                                 ty: DiagType::Obsolete {
                                     span: (start, end),
                                     name: icon.name.clone(),
