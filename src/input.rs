@@ -43,7 +43,7 @@ impl<R: BufRead> InputReader<R> {
             // Peek one line ahead
             self.read_line()?;
         } else {
-            // In the initial call, pad precedent empty lines,
+            // In the initial call, pad preceding empty lines,
             self.line_sizes.reserve(LINES_BEFORE + 1 + LINES_AFTER);
             self.line_sizes.extend(iter::repeat(0).take(LINES_BEFORE));
 
