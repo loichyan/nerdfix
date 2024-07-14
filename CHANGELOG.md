@@ -1,10 +1,64 @@
 # Changelog
 
+## v0.4.1 (2024-07-14)
+
+### ✨ Overview
+
+This release mainly addresses the high memory usage issue reported in #18: fixed a potential memory
+leak (#21) and implemented stream processing (#22).
+
+Also, some UI changes were introduced in #21, as we switched the diagnostic reporter from
+[codespan_reporting](https://docs.rs/codespan-reporting/latest/codespan_reporting) to
+[miette](https://docs.rs/miette/latest/miette).
+
+### 🚀 Features
+
+- **(runtime)** Set exact file size limit
+- **(runtime)** Add file limitation
+- **(runtime)** Filter out binary files
+
+### 🐛 Bug Fixes
+
+- **(cli)** Report the source path of diagnostics (#23)
+- **(cli)** Subtract with overflow
+
+### 🚜 Refactor
+
+- **(runtime)** Implement stream processing
+- **(runtime)** Zero-copy diagnostics reporting
+- Replace `codespan-reporting` with `miette`
+- **(util)** Rename `tryb!` to `try!`
+
+### 📚 Documentation
+
+- **(readme)** Update badge URLs
+
+### 🎨 Styling
+
+- Format with prettier
+- Make nightly rustfmt compatible with the stable rustfmt
+- Format with nightly rustfmt
+
+### ⚙️ Miscellaneous Tasks
+
+- Generate UTC release date
+- Report Cargo check results
+- Rewrite
+- Fix typos
+- Fix typos
+- Update author name
+- Add checks (#17)
+
+### 🛠️ Build
+
+- **(nix)** Update flakes
+- **(cargo)** Update dependencies
+
 ## v0.4.0 (2023-10-20)
 
 ### Overview
 
-This releases primarily introduces the predefined substitutions suggested in
+This release primarily introduces the predefined substitutions suggested in
 [#9](https://github.com/loichyan/nerdfix/issues/9) (thanks [@Finii](https://github.com/Finii)!) and
 also brings a few refactors on the CLI. Here are some guides for migrating from `v0.3`:
 
