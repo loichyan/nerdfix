@@ -1,7 +1,7 @@
 # 🔣 nerdfix
 
 ![GitHub Release](https://img.shields.io/github/v/release/loichyan/nerdfix)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/loichyan/nerdfix/ci.yml)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/loichyan/nerdfix/cicd.yml)
 
 `nerdfix` helps you to find/fix obsolete [Nerd Font](https://github.com/ryanoasis/nerd-fonts) icons
 in your project.
