@@ -37,15 +37,6 @@ pub struct Icon {
     pub obsolete: bool,
 }
 
-/// A helper type to deserialize/serialize [`Icon`].
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-struct IconInfo {
-    #[serde(with = "codepoint")]
-    codepoint: char,
-    #[serde(default)]
-    obsolete: bool,
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Substitution {
     pub ty: SubstitutionType,
