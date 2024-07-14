@@ -211,7 +211,7 @@ jobs:
           gh release "$command" "$release_tag" \
             --target="$GITHUB_BASE_REF" \
             --draft=true \
-            --title="$release_tag ($(date +'%Y-%m-%d'))" \
+            --title="$release_tag ($(date -u +'%Y-%m-%d'))" \
             --notes="$release_body"
 
       - name: Release | Upload artifacts
