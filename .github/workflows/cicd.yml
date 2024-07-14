@@ -92,7 +92,7 @@ jobs:
         run: cargo fmt --check
 
       - name: Check | Clippy
-        run: cargo clippy --locked
+        run: cargo clippy --locked --message-format=json | ./scripts/cargo-check-report
 
       - name: Check | Test suite
         run: cargo test --locked
@@ -174,7 +174,7 @@ jobs:
   release:
     name: Create GitHub release
     needs: [metadata, build]
-    if: github.repository == 'loichyan/test'
+    if: github.repository == 'loichyan/nerdfix'
     permissions:
       contents: write # need to update release
     runs-on: ubuntu-latest

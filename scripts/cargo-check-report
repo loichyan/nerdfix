@@ -1,0 +1,39 @@
+#!/usr/bin/env -S jq -srf
+
+# Sanitize some strings so they can be parsed safely:
+# - https://github.com/actions/toolkit/blob/1db7362/packages/core/src/command.ts#L80
+def escapeData:
+  gsub("%"; "%25")
+  | gsub("\r"; "%0D")
+  | gsub("\n"; "%0A")
+;
+def escapeProperty:
+  escapeData
+  | gsub(":"; "%3A")
+  | gsub(","; "%2C")
+;
+
+.[]
+| select(
+    .reason == "compiler-message"
+    and (.message.level == "error" or .message.level == "warning")
+    and (.message.spans | length) > 0
+  )
+| .message + .message.spans[0]
+| {
+    level,
+    properties: {
+      title: .message | escapeProperty,
+      file: .file_name | escapeProperty,
+      line: .line_start,
+      endLine: .line_end,
+      col: .column_start,
+      endColumn: .column_end,
+    },
+    message: .rendered | escapeData,
+  }
+| "::\(.level)"
+  + " "
+  + (.properties | to_entries | map("\(.key)=\(.value)") | join(","))
+  + "::"
+  + .message
