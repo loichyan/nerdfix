@@ -1,0 +1,221 @@
+# Adapted from:
+# - https://github.com/starship/starship/blob/27cc4bc/.github/workflows/release.yml
+# - https://github.com/sharkdp/bat/blob/6fc5882/.github/workflows/CICD.yml
+name: CICD
+on:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+  pull_request:
+    paths-ignore: ["**.md"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  metadata:
+    name: Extract crate metadata
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup | Rust
+        id: setup-rust
+        uses: dtolnay/rust-toolchain@stable
+      - run: rustup override set '${{ steps.setup-rust.outputs.name }}'
+
+      - name: Setup | Extract crate metadata
+        id: metadata
+        run: |
+          cargo metadata --no-deps --format-version=1 \
+            | jq -r '.packages[0]
+              | {name, version, rust_version}
+              | to_entries
+              | map("\(.key)=\(.value)")
+              | join("\n")' \
+            | tee -a $GITHUB_OUTPUT
+    outputs:
+      name: ${{ steps.metadata.outputs.name }}
+      version: ${{ steps.metadata.outputs.version }}
+      rust_version: ${{ steps.metadata.outputs.rust_version }}
+
+  check:
+    name: Run tests and checks
+    needs: [metadata]
+    strategy:
+      fail-fast: false
+      matrix:
+        # prettier-ignore
+        include:
+          - { os: ubuntu-20.04, toolchain: "${{ needs.metadata.outputs.rust_version }}" } # MSRV
+          - { os: ubuntu-20.04, toolchain: nightly } # Nightly
+          - { os: ubuntu-20.04, toolchain: stable }
+          - { os: macos-12,     toolchain: stable }
+          - { os: windows-2019, toolchain: stable }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup | Rust
+        id: setup-rust
+        uses: dtolnay/rust-toolchain@stable # avoid frequent cache updates
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy,rustfmt
+      - run: rustup override set '${{ steps.setup-rust.outputs.name }}'
+
+      - name: Setup | Install cargo-audit
+        uses: taiki-e/install-action@cargo-audit
+
+      - name: Setup | Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Post Setup | Show information
+        run: |
+          gcc --version || true
+          rustup --version
+          rustup toolchain list
+          rustup default
+          cargo --version
+          rustc --version
+
+      - name: Check | Audit
+        run: cargo audit
+
+      - name: Check | Formatting
+        run: cargo fmt --check
+
+      - name: Check | Clippy
+        run: cargo clippy --locked --message-format=json | ./scripts/cargo-check-report
+
+      - name: Check | Test suite
+        run: cargo test --locked
+
+      - name: Check | Build
+        run: cargo build --locked
+
+  build:
+    name: Build release binaries
+    needs: [metadata, check]
+    if: startsWith(github.head_ref, 'release/')
+    strategy:
+      fail-fast: false
+      matrix:
+        # prettier-ignore
+        include:
+          - { target: x86_64-unknown-linux-musl,  os: ubuntu-20.04, cross: true }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-20.04, cross: true }
+          - { target: x86_64-unknown-freebsd,     os: ubuntu-20.04, cross: true }
+          - { target: x86_64-apple-darwin,        os: macOS-12 }
+          - { target: aarch64-apple-darwin,       os: macOS-12 }
+          - { target: x86_64-pc-windows-msvc,     os: windows-2019 }
+          - { target: aarch64-pc-windows-msvc,    os: windows-2019 }
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: 0
+      RUST_BACKTRACE: short
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup | Rust
+        id: setup-rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: rustup override set '${{ steps.setup-rust.outputs.name }}'
+
+      - name: Setup | Install cross
+        if: matrix.cross
+        uses: taiki-e/install-action@cross
+      - run: echo CARGO=${{ matrix.cross && 'cross' || 'cargo' }} >>$GITHUB_ENV
+
+      - name: Build | Build release
+        run: $CARGO build --release --locked --target '${{ matrix.target }}'
+
+      - name: Post Build | Pack artifacts
+        id: pack
+        run: |
+          mkdir build
+          cp README.md LICENSE* build/
+          basename='${{ needs.metadata.outputs.name }}-${{ matrix.target }}'
+          binpath='target/${{ matrix.target }}/release/${{ needs.metadata.outputs.name }}'
+          case '${{ matrix.os }}' in
+            windows-*)
+              cp "$binpath.exe" build/
+              cd build && 7z a "../$basename.zip" *
+              echo name="$basename.zip" >>$GITHUB_OUTPUT
+            ;;
+            *)
+              cp "$binpath" build/
+              cd build && tar czvf "../$basename.tar.gz" *
+              echo name="$basename.tar.gz" >>$GITHUB_OUTPUT
+            ;;
+          esac
+
+      - name: Post Build | Generate checksums
+        # prettier-ignore
+        run: >
+          openssl dgst -sha256 -r '${{ steps.pack.outputs.name }}'
+          | cut -d' ' -f1 >'${{ steps.pack.outputs.name }}.sha256'
+
+      - name: Pre Release | Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ needs.metadata.outputs.name }}-${{ matrix.target }}
+          path: ${{ steps.pack.outputs.name }}*
+
+  release:
+    name: Create GitHub release
+    needs: [metadata, build]
+    if: github.repository == 'loichyan/nerdfix'
+    permissions:
+      contents: write # need to update release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v4
+
+      # For a PR from "release/v1.0.0", the release tag is set to "v1.0.0"
+      - name: Setup | Configure
+        id: configure
+        run: echo tag="${GITHUB_HEAD_REF#release/}" >$GITHUB_OUTPUT
+
+      - name: Setup | Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build/
+          pattern: ${{ needs.metadata.outputs.name }}-*
+          merge-multiple: true
+
+      # Release notes are taken from the PR's body
+      - name: Release | Create Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          release_tag: ${{ steps.configure.outputs.tag }}
+          release_body: ${{ github.event.pull_request.body }}
+        run: |
+          if gh release view --json= "$release_tag" &>/dev/null; then
+            echo "update existed release $release_tag"
+            command=edit
+          else
+            echo "create new release $release_tag"
+            command=create
+          fi
+          gh release "$command" "$release_tag" \
+            --target="$GITHUB_BASE_REF" \
+            --draft=true \
+            --title="$release_tag ($(date +'%Y-%m-%d'))" \
+            --notes="$release_body"
+
+      - name: Release | Upload artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          release_tag: ${{ steps.configure.outputs.tag }}
+        run: gh release upload --clobber "$release_tag" build/*
