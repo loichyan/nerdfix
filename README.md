@@ -3,33 +3,30 @@
 ![GitHub Release](https://img.shields.io/github/v/release/loichyan/nerdfix)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/loichyan/nerdfix/ci.yml)
 
-`nerdfix` helps you to find/fix obsolete
-[Nerd Font](https://github.com/ryanoasis/nerd-fonts) icons in your project.
+`nerdfix` helps you to find/fix obsolete [Nerd Font](https://github.com/ryanoasis/nerd-fonts) icons
+in your project.
 
 ## 💭 Why
 
-Nerd Fonts is used in many projects for a beautiful UI. It provides more than
-10,000 icons, but some codepoints conflict with other fonts (especially CJK
-fonts). To ensure that the icons remain in the private use area, Nerd Fonts has
-changed the codepoints of some icons in recent releases, for example, `mdi-*`
-icons (including over 2,000 icons) are deprecated since
-[v2.3.3](https://github.com/ryanoasis/nerd-fonts/releases/tag/v2.3.3) and will
-be removed in v3.
+Nerd Fonts is used in many projects for a beautiful UI. It provides more than 10,000 icons, but some
+codepoints conflict with other fonts (especially CJK fonts). To ensure that the icons remain in the
+private use area, Nerd Fonts has changed the codepoints of some icons in recent releases, for
+example, `mdi-*` icons (including over 2,000 icons) are deprecated since
+[v2.3.3](https://github.com/ryanoasis/nerd-fonts/releases/tag/v2.3.3) and will be removed in v3.
 
 These icons are marked as obsolete in
-[the official cheat sheet](https://www.nerdfonts.com/cheat-sheet) and it's
-recommended to replace them with the new ones. However, you may find it boring
-to check all the used icons one by one, so `nerdfix` was written to index the
-cheat sheet and find obsolete icons in your project.
+[the official cheat sheet](https://www.nerdfonts.com/cheat-sheet) and it's recommended to replace
+them with the new ones. However, you may find it boring to check all the used icons one by one, so
+`nerdfix` was written to index the cheat sheet and find obsolete icons in your project.
 
 ## ⚙️ Installation
 
 You can download the pre-built binaries from
-[the release page](https://github.com/loichyan/nerdfix/releases/latest) or
-manually build this project manually from source.
+[the release page](https://github.com/loichyan/nerdfix/releases/latest) or manually build this
+project manually from source.
 
-In addition, the binaries come with a recently updated cheat sheet and you can
-overwrite it with the latest one using `nerdfix -i /path/to/your/file` (follow
+In addition, the binaries come with a recently updated cheat sheet and you can overwrite it with the
+latest one using `nerdfix -i /path/to/your/file` (follow
 [this link](https://github.com/ryanoasis/nerd-fonts/blob/gh-pages/_posts/2017-01-04-icon-cheat-sheet.md)
 to get the latest file).
 
@@ -49,14 +46,13 @@ nix run github:loichyan/nerdfix
 
 ## 📋 Note
 
-Please make sure you're using Nerd Fonts after v2.3.3, otherwise the replaced
-new icons may not be displayed correctly. If you are a plugin author, it's also
-recommended to notify this in updates.
+Please make sure you're using Nerd Fonts after v2.3.3, otherwise the replaced new icons may not be
+displayed correctly. If you are a plugin author, it's also recommended to notify this in updates.
 
 ## 🔍 Usage
 
-The `check` command checks input files and reports obsolete icons with some
-suggestions (sorted by similarity) that you could replace them with.
+The `check` command checks input files and reports obsolete icons with some suggestions (sorted by
+similarity) that you could replace them with.
 
 ```sh
 nerdfix check test/test-data.txt
@@ -79,8 +75,8 @@ warning: Found obsolete icon U+F752
 
 ### Interactive patching
 
-The `fix` command reports the same information as `check` and displays a prompt
-asking the user to input a new icon to replace the obsolete one.
+The `fix` command reports the same information as `check` and displays a prompt asking the user to
+input a new icon to replace the obsolete one.
 
 ```text
 warning: Found obsolete icon U+F719
@@ -118,20 +114,17 @@ The prompt also provides fuzzy matching suggestions when you type the icon name:
   ...
 ```
 
-You can also use the `search` command to call the prompt directly for a fuzzy
-search.
+You can also use the `search` command to call the prompt directly for a fuzzy search.
 
 ### Autofix
 
 `nerdfix` provides some features to automatically patch obsolete icons:
 
 - The last user input is picked if an icon appears twice.
-- Use `--sub FROM/TO` (or `--sub exact:FROM/TO` for full syntax) to replace one
-  icon with another, e.g. `mdi-tab` is replaced with `md-tab` when
-  `--sub mdi-tab/md-tab` is specified.
-- Use `--sub prefix:FROM/TO` to replace the prefix of an icon name with another,
-  e.g. `mdi-tab` is replaced with `md-tab` when `--sub prefix:mdi-/md-` is
-  specified.
+- Use `--sub FROM/TO` (or `--sub exact:FROM/TO` for full syntax) to replace one icon with another,
+  e.g. `mdi-tab` is replaced with `md-tab` when `--sub mdi-tab/md-tab` is specified.
+- Use `--sub prefix:FROM/TO` to replace the prefix of an icon name with another, e.g. `mdi-tab` is
+  replaced with `md-tab` when `--sub prefix:mdi-/md-` is specified.
 
 ### Database
 
@@ -147,14 +140,13 @@ search.
 }
 ```
 
-As mentioned above, the precompiled `nerdfix` binary comes bundled with an
-indexed database that includes all available icons and some common
-substitutions.
+As mentioned above, the precompiled `nerdfix` binary comes bundled with an indexed database that
+includes all available icons and some common substitutions.
 
 ### Structured output
 
-You can use `check --format json` to get structured output for further use.
-`nerdfix` prints diagnostics with the following fields line by line:
+You can use `check --format json` to get structured output for further use. `nerdfix` prints
+diagnostics with the following fields line by line:
 
 | Field       | Description                                             |
 | ----------- | ------------------------------------------------------- |
@@ -200,7 +192,6 @@ Licensed under either of
 
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
   <http://www.apache.org/licenses/LICENSE-2.0>)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or
-  <http://opensource.org/licenses/MIT>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.

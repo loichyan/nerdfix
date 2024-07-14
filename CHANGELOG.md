@@ -5,16 +5,13 @@
 ### Overview
 
 This releases primarily introduces the predefined substitutions suggested in
-[#9](https://github.com/loichyan/nerdfix/issues/9) (thanks
-[@Finii](https://github.com/Finii)!) and also brings a few refactors on the CLI.
-Here are some guides for migrating from `v0.3`:
+[#9](https://github.com/loichyan/nerdfix/issues/9) (thanks [@Finii](https://github.com/Finii)!) and
+also brings a few refactors on the CLI. Here are some guides for migrating from `v0.3`:
 
-1. Use `dump` instead of `cache` to show all icons and substitutions in the
-   runtime database.
-2. Previous release of `nerdfix` supports the `--replace FROM:TO` argument to
-   perform a prefix substitution, now it defines a new argument
-   `--sub TYPE:FROM/TO` which supports both `exact` and `prefix` substitutions.
-   This means that you should use `--sub prefix:FROM/TO` in place of the old
+1. Use `dump` instead of `cache` to show all icons and substitutions in the runtime database.
+2. Previous release of `nerdfix` supports the `--replace FROM:TO` argument to perform a prefix
+   substitution, now it defines a new argument `--sub TYPE:FROM/TO` which supports both `exact` and
+   `prefix` substitutions. This means that you should use `--sub prefix:FROM/TO` in place of the old
    one.
 3. You can pipe the input/output with `nerdfix` using the special `-` path.
 
