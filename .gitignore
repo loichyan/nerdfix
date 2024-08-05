@@ -1,32 +1,5 @@
-## File system
-.DS_Store
-desktop.ini
-
-## Editor
-*.iml
-*.swo
-*.swp
-.cproject
-.favorites.json
-.idea
-.project
-.settings
-.vs
-.vscode
-Session.vim
-
-## Evn files
-.direnv
-.envrc
-
-## Logs
-*.log
-
-## Misc
-foo.*
-
-## Rust
+# Rust
 /target
 
-## Nix
+# Nix
 /result
