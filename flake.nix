@@ -17,12 +17,12 @@
           inherit system;
           overlays = [ inputs.fenix.overlays.default ];
         };
-        inherit (pkgs) fenix lib;
+        inherit (pkgs) lib mkShell fenix;
 
         # Rust toolchain
         rustToolchain = fenix.toolchainOf {
           channel = (lib.importTOML ./rust-toolchain.toml).toolchain.channel;
-          sha256 = "sha256-gdYqng0y9iHYzYPAdkC/ka3DRny3La/S5G8ASj0Ayyc=";
+          sha256 = "sha256-SXRtAuO4IqNOQq+nLbrsDFbVk+3aVA8NNpSZsKlVH/8=";
         };
 
         # For development
@@ -34,6 +34,7 @@
             rust-analyzer
           ]
         );
+        rust-analyzer = rustToolchain.rust-analyzer;
 
         # For building packages
         rust-minimal = rustToolchain.minimalToolchain;
@@ -49,7 +50,15 @@
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
         };
-        devShells.default = with pkgs; mkShell { packages = [ rust-dev ]; };
+        devShells.with-rust-analyzer = mkShell {
+          packages = [
+            rust-dev
+            rust-analyzer
+          ];
+        };
+        devShells.default = mkShell {
+          packages = [ rust-dev ];
+        };
       }
     );
 }
