@@ -8,6 +8,7 @@ rust-version = "1.70"
 
 [dependencies]
 bytesize = "1.3"
+camino = "1.1"
 clap = { version = ">=4.0, <4.5", features = ["derive"] }
 codespan-reporting = "0.11.1"
 content_inspector = "0.2.4"

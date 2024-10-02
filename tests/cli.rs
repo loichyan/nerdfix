@@ -131,7 +131,8 @@ fn fix() {
         "fix",
         "--select-first",
         "--write",
-        "tests/test-data.txt:-"
+        "-o-",
+        "tests/test-data.txt"
     );
 }
 
@@ -144,7 +145,8 @@ fn fix_with_exact_subs() {
         "--write",
         "-i=src/icons.json",
         "-i=tests/test-substitutions.json",
-        "tests/test-data.txt:-"
+        "-o-",
+        "tests/test-data.txt"
     );
 }
 
@@ -157,6 +159,7 @@ fn fix_with_prefix_subs() {
         "--write",
         "-i=src/icons.json",
         "--sub=prefix:mdi-/md-",
-        "tests/test-data.txt:-"
+        "-o-",
+        "tests/test-data.txt"
     );
 }
