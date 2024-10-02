@@ -58,7 +58,7 @@ fn walk<'a>(
                     })
                     .transpose()
                 })
-                .map(|e| e.map(|path| Source(IoPath::Path(path), None))),
+                .map(|e| e.map(|path| Source(IoPath::Path(path.try_into().unwrap()), None))),
         )
     }
 }

@@ -1,11 +1,11 @@
 //! Command line arguments parser.
 
 use std::io::BufReader;
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::{fmt, fs, io};
 
 use bytesize::ByteSize;
+use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 use shadow_rs::formatcp;
 use thisctx::IntoError;
@@ -170,7 +170,7 @@ impl FromStr for UserInput {
 #[derive(Clone, Debug)]
 pub enum IoPath {
     Stdio,
-    Path(PathBuf),
+    Path(Utf8PathBuf),
 }
 
 impl FromStr for IoPath {
@@ -189,7 +189,7 @@ impl fmt::Display for IoPath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Stdio => f.write_str("STDIO"),
-            Self::Path(path) => path.display().fmt(f),
+            Self::Path(path) => path.fmt(f),
         }
     }
 }
