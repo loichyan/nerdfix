@@ -126,12 +126,17 @@ pub enum Command {
         /// Set the file size limit (0 to disable it).
         #[arg(long, value_name= V_SIZE, default_value = DEFAULT_SIZE)]
         size_limit: ByteSize,
-        /// Path tuple(s) of files to read from and write to.
+        /// Save fixed files to different paths.
         ///
-        /// Each tuple is an input path followed by an optional output path,
-        /// e.g. `nerdfix fix /input/as/ouput /read/from:/write/to`.
+        /// Each path should be paired with its corresponding source path. Use
+        /// empty strings to save output directly to the source path. For
+        /// example, `nerdfix fix -o output1 -o "" input1 input2` will save
+        /// `input1` to `output1` and save `input2` to its original path.
+        #[arg(short, long, value_name = V_PATH)]
+        output: Vec<Outpath>,
+        /// Path(s) of files to check.
         #[arg(value_name = V_SOURCE)]
-        source: Vec<Source>,
+        source: Vec<IoPath>,
     },
     /// Fuzzy search for an icon.
     Search {},
@@ -249,16 +254,19 @@ impl fmt::Display for OutputFormat {
 }
 
 #[derive(Clone, Debug)]
-pub struct Source(pub IoPath, pub Option<IoPath>);
+pub struct Outpath(pub Option<IoPath>);
 
-impl FromStr for Source {
-    type Err = &'static str;
+impl FromStr for Outpath {
+    type Err = <IoPath as FromStr>::Err;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(if let Some((input, output)) = s.split_once(':') {
-            Source(input.parse()?, Some(output.parse()?))
+        if s.is_empty() {
+            Ok(Self(None))
         } else {
-            Source(s.parse()?, None)
-        })
+            s.parse().map(Some).map(Self)
+        }
     }
 }
+
+#[derive(Debug)]
+pub struct Source(pub IoPath, pub Option<IoPath>);

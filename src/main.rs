@@ -12,29 +12,31 @@ mod runtime;
 shadow_rs::shadow!(shadow);
 
 use clap::Parser;
-use cli::{Command, IoPath, Source};
-use prompt::YesOrNo;
-use runtime::{CheckerContext, Runtime};
-use thisctx::WithContext;
+use thisctx::{IntoError, WithContext};
 use tracing::{error, info, warn, Level};
 use tracing_subscriber::prelude::*;
-use util::{LogStatus, ResultExt as _};
 use walkdir::WalkDir;
+
+use self::cli::{Command, IoPath, Source};
+use self::prompt::YesOrNo;
+use self::runtime::{CheckerContext, Runtime};
+use self::util::{LogStatus, ResultExt as _};
 
 static ICONS: &str = include_str!("./icons.json");
 static SUBSTITUTIONS: &str = include_str!("./substitutions.json");
 
 fn walk<'a>(
-    paths: impl 'a + IntoIterator<Item = Source>,
+    paths: impl 'a + IntoIterator<Item = (IoPath, Option<IoPath>)>,
     recursive: bool,
 ) -> impl 'a + Iterator<Item = error::Result<Source>> {
     if !recursive {
-        Box::new(paths.into_iter().map(Ok)) as Box<dyn Iterator<Item = _>>
+        Box::new(paths.into_iter().map(|(i, o)| Source(i, o)).map(Ok))
+            as Box<dyn Iterator<Item = _>>
     } else {
         Box::new(
             paths
                 .into_iter()
-                .flat_map(|Source(input, output)| {
+                .flat_map(|(input, output)| {
                     if let Some(output) = output {
                         warn!("Output path is ignored when `--recursive`: {}", output);
                     }
@@ -119,7 +121,7 @@ fn main_impl() -> error::Result<()> {
                 size_limit: size_limit.as_u64(),
                 ..Default::default()
             };
-            for source in walk(source.into_iter().map(|p| Source(p, None)), recursive) {
+            for source in walk(source.into_iter().map(|p| (p, None)), recursive) {
                 tri!({
                     let source = source?;
                     rt.check(&mut context, &source.0, None)
@@ -135,10 +137,22 @@ fn main_impl() -> error::Result<()> {
             recursive,
             include_binary,
             size_limit,
+            output,
             source,
         } => {
             if yes {
                 warn!("`--yes` is deprecated, use `--write` instead");
+            }
+            if !output.is_empty() && output.len() != source.len() {
+                return Err(error::OutputMismatched.build());
+            }
+            if cfg!(unix) {
+                // Colon in `C:\Path` should not be considered as separators.
+                for p in source.iter() {
+                    if matches!(p,  IoPath::Path(p) if p.as_str().contains(':')) {
+                        warn!("`input:output` syntax is deprecated, use `--output` instead");
+                    }
+                }
             }
             let rt = rt.build();
             let mut context = CheckerContext {
@@ -149,7 +163,10 @@ fn main_impl() -> error::Result<()> {
                 ..Default::default()
             };
             let mut buffer = String::new();
-            for source in walk(source, recursive) {
+            for source in walk(
+                source.into_iter().zip(output.into_iter().map(|p| p.0)),
+                recursive,
+            ) {
                 tri!({
                     let source = source?;
                     let Source(input, output) = &source;

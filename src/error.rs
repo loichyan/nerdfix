@@ -52,6 +52,8 @@ pub enum Error {
     InvalidCodepoint,
     #[error("Operation was interrupted by the user")]
     Interrupted,
+    #[error("Number of output paths mismatch with source paths")]
+    OutputMismatched,
     #[error(transparent)]
     Any(Box<dyn Send + Sync + std::error::Error>),
 }
