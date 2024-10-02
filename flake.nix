@@ -31,6 +31,7 @@
           [
             defaultToolchain
             rust-src
+            rust-analyzer
           ]
         );
 
