@@ -20,10 +20,12 @@
         inherit (pkgs) lib mkShell fenix;
 
         # Rust toolchain
-        rustToolchain = fenix.toolchainOf {
-          channel = (lib.importTOML ./rust-toolchain.toml).toolchain.channel;
+        crate = (lib.importTOML ./Cargo.toml).package;
+        rustChannel = {
+          channel = crate.rust-version;
           sha256 = "sha256-SXRtAuO4IqNOQq+nLbrsDFbVk+3aVA8NNpSZsKlVH/8=";
         };
+        rustToolchain = fenix.toolchainOf rustChannel;
 
         # For development
         rust-dev = fenix.combine (
@@ -45,19 +47,28 @@
       in
       {
         packages.default = rustPlatform.buildRustPackage {
-          pname = "nerdfix";
-          version = "0.4.0";
+          pname = crate.name;
+          version = crate.version;
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
+          meta = {
+            description = crate.description;
+            homepage = crate.repository;
+            license = with lib.licenses; [
+              mit
+              asl20
+            ];
+          };
+        };
+
+        devShells.default = mkShell {
+          packages = [ rust-dev ];
         };
         devShells.with-rust-analyzer = mkShell {
           packages = [
             rust-dev
             rust-analyzer
           ];
-        };
-        devShells.default = mkShell {
-          packages = [ rust-dev ];
         };
       }
     );
