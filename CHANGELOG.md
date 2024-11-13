@@ -1,219 +1,218 @@
 # Changelog
 
-## v0.4.1 (2024-07-14)
+All notable changes to this project will be documented in this file.
 
-### ✨ Overview
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
+adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-This release mainly addresses the high memory usage issue reported in #18: fixed a potential memory
-leak (#21) and implemented stream processing (#22).
+<!--
+Here's a template for each release section. This file should only include changes that are
+noticeable to end-users since the last release. For developers, this project follows
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) to track changes.
 
-Also, some UI changes were introduced in #21, as we switched the diagnostic reporter from
+## [1.0.0] - YYYY-MM-DD
+
+### Added
+
+- [**breaking**] Always place breaking changes at the top.
+- Append other changes in chronological order under the relevant subsections.
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+[1.0.0]: https://github.com/user/repo/compare/v0.0.0..v1.0.0
+-->
+
+## [Unreleased]
+
+### Added
+
+- Add a subcommand, `nerdfix completions <SHELL>`, to generate completions for your shell
+  ([#30](https://github.com/loichyan/nerdfix/pull/30)).
+
+## [0.4.1] - 2024-07-14
+
+This release mainly addresses the high memory usage issue reported in
+[#18](https://github.com/loichyan/nerdfix/pull/18): fixed a potential memory leak in
+[#21](https://github.com/loichyan/nerdfix/pull/21), and implemented stream processing in
+[#22](https://github.com/loichyan/nerdfix/pull/22).
+
+Also, some UI changes were introduced in [#21](https://github.com/loichyan/nerdfix/pull/21), as we
+switched the diagnostic reporter from
 [codespan_reporting](https://docs.rs/codespan-reporting/latest/codespan_reporting) to
 [miette](https://docs.rs/miette/latest/miette).
 
-### 🚀 Features
+### Added
 
-- **(runtime)** Set exact file size limit
-- **(runtime)** Add file limitation
-- **(runtime)** Filter out binary files
+- Support filter out binary files
+  ([d1f29e4](https://github.com/loichyan/nerdfix/commit/d1f29e4bdd40b784090486fc7bf798ecd42997fb)).
+- Support filter out files by size
+  ([db421eb](https://github.com/loichyan/nerdfix/commit/db421ebfa941d7ea4e2ce386fef4d576922bbf4a)).
 
-### 🐛 Bug Fixes
+### Changed
 
-- **(cli)** Report the source path of diagnostics (#23)
-- **(cli)** Subtract with overflow
+- Report the source paths of diagnostics ([#23](https://github.com/loichyan/nerdfix/pull/23)).
+- Process files in bytes stream ([#22](https://github.com/loichyan/nerdfix/pull/22)).
+- Use `miette` in place of `codespan-reporting` as the diagnostic reporter
+  ([#21](https://github.com/loichyan/nerdfix/pull/21)).
 
-### 🚜 Refactor
+### Fixed
 
-- **(runtime)** Implement stream processing
-- **(runtime)** Zero-copy diagnostics reporting
-- Replace `codespan-reporting` with `miette`
-- **(util)** Rename `tryb!` to `try!`
+- Fix subtract with overflow
+  ([aa29181](https://github.com/loichyan/nerdfix/commit/aa29181aa41c094e60e519b7c61b95adf331f866)).
+- Fix potential memory leaks ([#21](https://github.com/loichyan/nerdfix/pull/21)).
 
-### 📚 Documentation
+## [0.4.0] - 2023-10-20
 
-- **(readme)** Update badge URLs
-
-### 🎨 Styling
-
-- Format with prettier
-- Make nightly rustfmt compatible with the stable rustfmt
-- Format with nightly rustfmt
-
-### ⚙️ Miscellaneous Tasks
-
-- Generate UTC release date
-- Report Cargo check results
-- Rewrite
-- Fix typos
-- Fix typos
-- Update author name
-- Add checks (#17)
-
-### 🛠️ Build
-
-- **(nix)** Update flakes
-- **(cargo)** Update dependencies
-
-## v0.4.0 (2023-10-20)
-
-### Overview
-
-This release primarily introduces the predefined substitutions suggested in
-[#9](https://github.com/loichyan/nerdfix/issues/9) (thanks [@Finii](https://github.com/Finii)!) and
-also brings a few refactors on the CLI. Here are some guides for migrating from `v0.3`:
+This release introduces the predefined substitutions support suggested in
+[#9](https://github.com/loichyan/nerdfix/issues/9) (thanks [@Finii](https://github.com/Finii)), and
+also brings some UX breaking changes. Here are some guides for migrating from `v0.3`:
 
 1. Use `dump` instead of `cache` to show all icons and substitutions in the runtime database.
-2. Previous release of `nerdfix` supports the `--replace FROM:TO` argument to perform a prefix
-   substitution, now it defines a new argument `--sub TYPE:FROM/TO` which supports both `exact` and
-   `prefix` substitutions. This means that you should use `--sub prefix:FROM/TO` in place of the old
-   one.
-3. You can pipe the input/output with `nerdfix` using the special `-` path.
+2. The Previous release supports use `--replace FROM:TO` to perform a prefix substitution, now it
+   uses the newly add `--sub TYPE:FROM/TO` argument to support both `exact` and `prefix`
+   substitutions. This means that you should use `--sub prefix:FROM/TO` in place of the old one.
 
-### Feat
+### Added
 
-- **database**: make `prefix:mdi-/md-` a default substitution
-- support read from and write to stdio in more options
-- **runtime**: generate icon substitutions list for `nf-mdi-*`
-- **autofix**: load predefined substitutions list
-- **parser**: support new cheat-sheet format
-- **parser**: strip `nf-` prefixes
-- **cli**: use `-v/-q` to control log level
+- Add `-v/-q` to control log level
+  ([1294e24](https://github.com/loichyan/nerdfix/commit/1294e24972baaf5e0b88a3021745f2ae6a261e20)).
+- Support load predefined substitutions list ([#10](https://github.com/loichyan/nerdfix/pull/10)).
+- Support parse the new cheat-sheet format ([#10](https://github.com/loichyan/nerdfix/pull/10)).
+- Support read from and write to STDIO in more options
+  ([#7](https://github.com/loichyan/nerdfix/pull/7)).
 
-### Fix
+### Changed
 
-- **runtime**: clear buffer before check sources
-- **log**: exit non-zero if any error occurs
-- **cli**: warn deprecated arguments
-- **justfile**: remove redundant `nf-` prefixes
+- [**breaking**] Rename subcommand `cache` to `dump`
+  ([f148638](http://github.com/loichyan/nerdfix/commit/2bbfc04ea356228a92f714a84a23246004320c3f)).
+- [**breaking**] Deprecated `--replace FROM:TO`, use `--sub prefix:FROM/TO` instead
+  ([557c6fd](http://github.com/loichyan/nerdfix/commit/557c6fd1a7173ad6e34e431406577a3adf66ed97)).
+- Move `--sub` to global options
+  ([6c8808e](https://github.com/loichyan/nerdfix/commit/6c8808e61dabaaf1bb91bd079c47862a62eed7ff)).
+- Save database in JSON
+  ([e8a0ccf](https://github.com/loichyan/nerdfix/commit/e8a0ccf2a944a2a25e49251ceaf0158cbd0791df)).
+- Show source paths in logs
+  ([2699dd4](https://github.com/loichyan/nerdfix/commit/2699dd4f4f7d1a1cf540f6afb7e4d38215648400)).
+- Strip `nf-` prefixes in messages, and generated databases
+  ([#12](https://github.com/loichyan/nerdfix/pull/12)).
+- Warn usage of deprecated arguments
+  ([a783b7e](https://github.com/loichyan/nerdfix/commit/a783b7e96b38edfb0e7dda0de1f56d6d9c64100a)).
 
-### Refactor
+### Fixed
 
-- **cli**: rename term input to database
-- implement a syntax to define substitutions
-- **cli**: use `--input` to load substitutions
-- clean up typo and unused codes
-- **colored**: replace `colored` with `nu_ansi_term`
-- **autofix**: move `--replace` to global options
-- **cli**: rename subcommand `cache` to `index`
-- **cache**: save in json
-- **macros**: match block instead of statements
-- **error**: show path in logs
-- replace inline closures with try-block macro
+- Exit non-zero if any error occurs ([#15](https://github.com/loichyan/nerdfix/pull/15)).
 
-## v0.3.1 (2023-05-15)
+## [0.3.1] - 2023-05-14
 
-### Fix
+### Fixed
 
-- **cli**: pad output codepoints
+- Fix testing regressions
+  ([4070f9e](https://github.com/loichyan/nerdfix/commit/4070f9e894337ca7d3f7641258428ad6d7cd6332)).
+- Pad output codepoints
+  ([021d313](https://github.com/loichyan/nerdfix/commit/021d313ab3d1821e5bcf5d0d8d39a7d5fcdec776)).
 
-## v0.3.0 (2023-05-12)
+## [0.3.0] - 2023-05-12
 
-### Feat
+### Added
 
-- **cli**: support optional paths to write content to
-- **cli**: support recursive directories traversal (#6)
-- **cli**: improve prompts auto confirmation (#4)
+- Support recursive directories traversal ([#6](https://github.com/loichyan/nerdfix/pull/6)).
+- Support specify optional paths where patched contents are written to
+  ([ee9b398](https://github.com/loichyan/nerdfix/commit/ee9b398268b38ebbec59609f30d6f753ab6ef152)).
 
-### Fix
+### Changed
 
-- **parser**: icons with `removed` label should be considered as obsolete
+- [**breaking**] Deprecated `--yes`, use `--write` and `--select-first` to force non-interactive
+  fixes ([#4](https://github.com/loichyan/nerdfix/pull/4)).
+- Streamline Nix package derivation
+  ([a9a3630](https://github.com/loichyan/nerdfix/commit/a9a3630c6eafe6558fcca49aa964243d0f5b688f)).
 
-### Refactor
+### Fixed
 
-- **util**: replace some macros with ext traits
+- Do not consider icons with `removed` label as obsolete
+  ([750ace5](https://github.com/loichyan/nerdfix/commit/750ace506f4c52fd0fa437411102b5be18a3a354)).
 
-## v0.2.3 (2023-05-03)
+## [0.2.3] - 2023-05-03
 
-### Fix
+### Added
 
-- **stdio**: logs and diagnostics should be written to different streams
+- Add Nix flake package
+  ([b33907b](https://github.com/loichyan/nerdfix/commit/b33907b0d5b605376377dabd950526eacb3cd5e4)).
 
-### Refactor
+### Fixed
 
-- `error::Io` can be directly constructed with `&Path`
+- Write logs and diagnostics to different streams
+  ([0e7b3f6](https://github.com/loichyan/nerdfix/commit/0e7b3f6389b0a783a2f2838f701f645f69548e2f)).
 
-## v0.2.2 (2023-05-02)
+## [0.2.2] - 2023-05-02
 
-### Fix
+### Changed
 
-- **fix**: patched content should be created in autofix
-- **prompt**: keyboard hints should follow the same style
-- **error**: `Error` should display brief message
+- Display brief error messages
+  ([8319fcb](https://github.com/loichyan/nerdfix/commit/8319fcbfa4eccb5f7f87d5a4804e5cda51d9393b)).
+- Use the same style of keyboard hints
+  ([e5a8975](https://github.com/loichyan/nerdfix/commit/e5a8975cffbeac417c4b68e56a742941e33f85bd)).
 
-### Refactor
+### Fixed
 
-- **cli**: show more metadata
-- **error**: make path optional
-- **error**: derive `From` for source errors
+- Sync non-patched contents before autofix
+  ([44ad79d](https://github.com/loichyan/nerdfix/commit/44ad79dd357cd351685f8aea7aa54cab88f1ea32)).
 
-## v0.2.1 (2023-04-11)
+## [0.2.1] - 2023-04-11
 
-### Feat
+### Added
 
-- **search**: print the icon name
+- Show the name of a selected icon
+  ([48d7aff](https://github.com/loichyan/nerdfix/commit/48d7aff8b57fd04312f311d09bb9d2b718e8b461)).
 
-### Fix
+### Fixed
 
-- **prompt**: display formatted user input
-- **search**: use the first string of user input
-- **runtime**: sort candidates by their names for stable results
+- Only use the first string of user input
+  ([f67f157](https://github.com/loichyan/nerdfix/commit/f67f157218e4d4c018fdc8aedb0c21542d9f7de7)).
+- Sort candidates by names for stable results
+  ([1529a4b](https://github.com/loichyan/nerdfix/commit/1529a4b1b186dd2369e5ccf712d4844fd84be5d2)).
 
-### Refactor
+## [0.2.0] - 2023-03-30
 
-- **search**: use n-grams to search subset matches
-- **runtime**: replace ngrammatic with noodler
+### Added
 
-## v0.2.0 (2023-03-30)
+- Support fix sources non-interactively through `--yes`
+  ([e2e4bc9](https://github.com/loichyan/nerdfix/commit/e2e4bc9c275294ff4f1d97650b26475b80e7af47)).
+- Support structured format output through `--format=json`
+  ([#2](https://github.com/loichyan/nerdfix/pull/2)).
+- Add `--replace` to autofix icons by name ([#1](https://github.com/loichyan/nerdfix/pull/1)).
+- Add `--verbose` to control log level
+  ([4830e37](https://github.com/loichyan/nerdfix/commit/4830e3766cc4892b6eefad567da2cc5fb3a4a677)).
 
-### Feat
+### Changed
 
-- **cli**: support output structured data
-- **cli**: use `--verbose` to increase log level
-- **cli**: use `fix --replace` to auto fix icons
-- **cli**: support send yes to all prompts
+- Change the severity of obsolete fonts to NOTE
+  ([2debe0b](https://github.com/loichyan/nerdfix/commit/2debe0b337f5f4c101abd53701ab4fb59e740475)).
 
-### Fix
+### Fixed
 
-- **runtime**: add path in structured output
-- **runtime**: log errors and continue running
-- **runtime**: dont load inlined icons if user input is present
+- Do not load builtin icons if users specify their own database
+  ([428b468](https://github.com/loichyan/nerdfix/commit/428b468e92d575740bd283a37719e03924a89bcf)).
 
-### Refactor
+## [0.1.0] - 2023-03-25
 
-- **iter**: use itertools to simplify code
-- **cli**: dont allow short argument for `fix --replace`
-- **report**: change the severity of obsolete fonts to NOTE
-- **runtime**: lazily construct patched content
+🎉 Initial release. See [README](https://github.com/loichyan/nerdfix/blob/v0.1.0/README.md) for more
+details.
 
-### Perf
-
-- **runtime**: lazily initialize candidates
-
-## v0.1.0 (2023-03-25)
-
-### Feat
-
-- **parser**: parse both cheat sheet and cached content input
-- **cli**: add `search` to fuzzy search an icon
-- **autocomplete**: search icons whose name contain the input string
-- **fix**: show icons in suggesions
-- **check**: auto patch using last user input
-- **cli**: add `cache`, `check` and `fix` commands
-
-### Fix
-
-- **cli**: dont prompt if no icon is patched
-- **cli**: ignore errors in prompt
-- **clippy**: fix clippy warnings
-
-### Refactor
-
-- **runtime**: use `IndexMap` to store icons
-- **runtime**: move `Runtime` to a standalone module `crate::runtime`
-- move some type definitions and implementations to standalone modules
-- **icon**: rename `crate::db` to `crate::icon`
-- **db**: change type of `Icon::codepoint` to `char`
-
-### Perf
-
-- **runtime**: dont clone icons
+[Unreleased]: https://github.com/loichyan/nerdfix/compare/v0.4.1..HEAD
+[0.4.1]: https://github.com/loichyan/nerdfix/compare/v0.4.0..v0.4.1
+[0.4.0]: https://github.com/loichyan/nerdfix/compare/v0.3.1..v0.4.0
+[0.3.1]: https://github.com/loichyan/nerdfix/compare/v0.3.0..v0.3.1
+[0.3.0]: https://github.com/loichyan/nerdfix/compare/v0.2.3..v0.3.0
+[0.2.3]: https://github.com/loichyan/nerdfix/compare/v0.2.2..v0.2.3
+[0.2.2]: https://github.com/loichyan/nerdfix/compare/v0.2.1..v0.2.2
+[0.2.1]: https://github.com/loichyan/nerdfix/compare/v0.2.0..v0.2.1
+[0.2.0]: https://github.com/loichyan/nerdfix/compare/v0.1.0..v0.2.0
+[0.1.0]: https://github.com/loichyan/nerdfix/releases/tag/v0.1.0
