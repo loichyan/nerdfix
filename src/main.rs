@@ -195,6 +195,14 @@ fn main_impl() -> error::Result<()> {
         Command::Search {} => {
             rt.build().prompt_input_icon(None).ok();
         }
+        Command::Completions { shell } => {
+            clap_complete::generate(
+                shell,
+                &mut <cli::Cli as clap::CommandFactory>::command(),
+                shadow::PROJECT_NAME,
+                &mut std::io::stdout(),
+            );
+        }
     }
     Ok(())
 }
