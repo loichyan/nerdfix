@@ -7,6 +7,7 @@ use std::{fmt, fs, io};
 use bytesize::ByteSize;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 use shadow_rs::formatcp;
 use thisctx::IntoError;
 
@@ -14,11 +15,12 @@ use crate::icon::Substitution;
 use crate::input::InputReader;
 use crate::{error, shadow};
 
+const V_FORMAT: &str = "FORMAT";
 const V_PATH: &str = "PATH";
+const V_SHELL: &str = "SHELL";
+const V_SIZE: &str = "SIZE";
 const V_SOURCE: &str = "SOURCE";
 const V_SUBSTITUTION: &str = "SUBSTITUTION";
-const V_FORMAT: &str = "FORMAT";
-const V_SIZE: &str = "SIZE";
 const DEFAULT_SIZE: &str = "16MB";
 const INDEX_REV: &str = include_str!("index-rev");
 const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, INDEX_REV);
@@ -140,6 +142,11 @@ pub enum Command {
     },
     /// Fuzzy search for an icon.
     Search {},
+    /// Generate shell completions for your shell to stdout.
+    Completions {
+        #[arg(value_name = V_SHELL)]
+        shell: Shell,
+    },
 }
 
 #[derive(Clone, Debug)]
