@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     fenix = {
       url = "github:nix-community/fenix";
@@ -19,34 +19,37 @@
         };
         inherit (pkgs) lib mkShell fenix;
 
-        # Rust toolchain
-        crate = (lib.importTOML ./Cargo.toml).package;
+        toolchainFile = (lib.importTOML ./rust-toolchain.toml);
+        cargoManifest = (lib.importTOML ./Cargo.toml);
+        crate = cargoManifest.package;
+
+        # Rust toolchain for development
         rustChannel = {
-          channel = crate.rust-version;
+          channel = toolchainFile.toolchain.channel;
           sha256 = "sha256-SXRtAuO4IqNOQq+nLbrsDFbVk+3aVA8NNpSZsKlVH/8=";
         };
         rustToolchain = fenix.toolchainOf rustChannel;
-
-        # For development
         rust-dev = fenix.combine (
           with rustToolchain;
           [
             defaultToolchain
             rust-src
-            rust-analyzer
           ]
         );
-        rust-analyzer = rustToolchain.rust-analyzer;
 
-        # For building packages
-        rust-minimal = rustToolchain.minimalToolchain;
-        rustPlatform = pkgs.makeRustPlatform {
-          cargo = rust-minimal;
-          rustc = rust-minimal;
-        };
+        # Rust toolchain of MSRV
+        rust-msrv =
+          if crate.rust-version == rustChannel.channel then
+            # Reuse the development toolchain if possible
+            rust-dev
+          else
+            (fenix.toolchainOf {
+              channel = crate.rust-version;
+              sha256 = "";
+            }).minimalToolchain;
       in
       {
-        packages.default = rustPlatform.buildRustPackage {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
           pname = crate.name;
           version = crate.version;
           src = ./.;
@@ -67,8 +70,11 @@
         devShells.with-rust-analyzer = mkShell {
           packages = [
             rust-dev
-            rust-analyzer
+            rustToolchain.rust-analyzer
           ];
+        };
+        devShells.msrv = mkShell {
+          packages = [ rust-msrv ];
         };
       }
     );
