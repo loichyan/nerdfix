@@ -30,7 +30,7 @@
 # Autofix with the first suggestion '󰈙'
   ☞ Found obsolete icon U+F719
    ╭─[tests/test-data.txt:8:26]
- 7 │ # Test autofix from histroy
+ 7 │ # Test autofix from history
  8 │ mdi-file_document_box = ""
    ·                          ┬
    ·                          ╰── Icon 'mdi-file_document_box' is marked as obsolete

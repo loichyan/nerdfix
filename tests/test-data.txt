@@ -4,7 +4,7 @@ md-folder_multiple  = "󰉓"
 mdi-file_document_box = ""
 md-file_document      = "󰈙"
 
-# Test autofix from histroy
+# Test autofix from history
 mdi-file_document_box = ""
 md-file_document      = "󰈙"
 
@@ -19,3 +19,7 @@ md-rhombus_outline  = "󰜌"
 
 mdi-arrow_right_thick = ""
 md-arrow_right_thick  = "󰁕"
+
+# Some random icons dropped in Nerd Fonts v3.3.0
+dev-bugsense = ""
+dev-atlassian = ""
