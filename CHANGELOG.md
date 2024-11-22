@@ -36,11 +36,14 @@ noticeable to end-users since the last release. For developers, this project fol
 
 - Add a subcommand, `nerdfix completions <SHELL>`, to generate completions for your shell
   ([#30](https://github.com/loichyan/nerdfix/pull/30)).
-- Support comments in JSON files.
-- Add a new `nerdfix query` subcommand, useful for querying icon infos from the database.
-- Add a new `codepoint:from/to` substitution type.
+- Support comments in JSON files ([#33](https://github.com/loichyan/nerdfix/pull/33)).
+- Add a new `nerdfix query` subcommand, useful for querying icon infos from the database
+  ([#33](https://github.com/loichyan/nerdfix/pull/33)).
+- Add a new `codepoint:from/to` substitution type
+  ([#33](https://github.com/loichyan/nerdfix/pull/33)).
 - Support checking dropped icons of Nerd Fonts v3.3.0 through the newly added
-  `nerdfix --nf-version=3.3.0` option.
+  `nerdfix --nf-version=3.3.0` option ([#33](https://github.com/loichyan/nerdfix/pull/33), thanks
+  [@Finii](https://github.com/Finii) and [@hasecilu](https://github.com/hasecilu)).
 
 ## [0.4.1] - 2024-07-14
 
