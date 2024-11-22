@@ -8,6 +8,7 @@ use bytesize::ByteSize;
 use camino::Utf8PathBuf;
 use clap::{Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
+use derive_more::Display;
 use shadow_rs::formatcp;
 use thisctx::IntoError;
 
@@ -20,7 +21,8 @@ const V_PATH: &str = "PATH";
 const V_SHELL: &str = "SHELL";
 const V_SIZE: &str = "SIZE";
 const V_SOURCE: &str = "SOURCE";
-const V_SUBSTITUTION: &str = "SUBSTITUTION";
+const V_SUB: &str = "SUB";
+const V_VERSION: &str = "VERSION";
 const DEFAULT_SIZE: &str = "16MB";
 const INDEX_REV: &str = include_str!("index-rev");
 const CLAP_LONG_VERSION: &str = formatcp!("{}\ncheat-sheet: {}", shadow::PKG_VERSION, INDEX_REV);
@@ -45,8 +47,11 @@ pub struct Cli {
     /// them at first.
     #[arg(short, long, global = true, value_name = V_PATH)]
     pub input: Vec<IoPath>,
+    /// The version of Nerd Fonts you intend to migrate to.
+    #[arg(long, global = true, value_name = V_VERSION, default_value_t = NfVersion::default())]
+    pub nf_version: NfVersion,
     /// Perform an exact/prefix substitution.
-    #[arg(long, global = true, value_name = V_SUBSTITUTION, long_help = SUB_LONG_HELP)]
+    #[arg(long, global = true, value_name = V_SUB, long_help = SUB_LONG_HELP)]
     pub sub: Vec<Substitution>,
     /// Decrease log level.
     #[arg(
@@ -69,10 +74,10 @@ pub struct Cli {
     #[command(subcommand)]
     pub cmd: Command,
     /// [deprecated] Use `--input` instead.
-    #[arg(long, global = true, value_name = V_PATH)]
+    #[arg(long, global = true, value_name = V_SUB)]
     pub substitution: Vec<IoPath>,
     /// [deprecated] Use `--sub prefix:` instead.
-    #[arg(long, global = true, value_name = V_SUBSTITUTION)]
+    #[arg(long, global = true, value_name = V_SUB)]
     pub replace: Vec<Substitution>,
 }
 
@@ -93,7 +98,7 @@ pub enum Command {
     /// Check for obsolete icons.
     Check {
         /// Output format of diagnostics.
-        #[arg(long, value_name = V_FORMAT, default_value_t = OutputFormat::Console)]
+        #[arg(long, value_name = V_FORMAT, default_value_t = OutputFormat::default())]
         format: OutputFormat,
         /// Recursively traverse all directories.
         #[arg(short, long)]
@@ -142,11 +147,29 @@ pub enum Command {
     },
     /// Fuzzy search for an icon.
     Search {},
+    /// Query icon infos from the database, returned in JSON.
+    Query {
+        #[arg(long, value_parser = crate::icon::parse_codepoint)]
+        codepoint: Option<char>,
+        #[arg(long, conflicts_with = "codepoint")]
+        name: Option<String>,
+    },
     /// Generate shell completions for your shell to stdout.
     Completions {
         #[arg(value_name = V_SHELL)]
         shell: Shell,
     },
+}
+
+#[derive(Clone, Copy, Debug, Display, Default, Eq, PartialEq, ValueEnum)]
+pub enum NfVersion {
+    #[default]
+    #[value(name = "3.0.0")]
+    #[display("3.0.0")]
+    V3_0_0,
+    #[value(name = "3.3.0")]
+    #[display("3.3.0")]
+    V3_3_0,
 }
 
 #[derive(Clone, Debug)]
@@ -242,22 +265,15 @@ impl IoPath {
     }
 }
 
-#[derive(Clone, Debug, Default, ValueEnum)]
+#[derive(Clone, Copy, Debug, Display, Default, Eq, PartialEq, ValueEnum)]
 pub enum OutputFormat {
-    #[value(help("Json output format"))]
+    #[value(help = "Json output format")]
+    #[display("json")]
     Json,
     #[default]
-    #[value(help("Human-readable output format"))]
+    #[value(help = "Human-readable output format")]
+    #[display("console")]
     Console,
-}
-
-impl fmt::Display for OutputFormat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Json => f.write_str("json"),
-            Self::Console => f.write_str("console"),
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

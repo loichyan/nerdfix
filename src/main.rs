@@ -17,13 +17,14 @@ use tracing::{error, info, warn, Level};
 use tracing_subscriber::prelude::*;
 use walkdir::WalkDir;
 
-use self::cli::{Command, IoPath, Source};
+use self::cli::{Command, IoPath, NfVersion, Source};
 use self::prompt::YesOrNo;
 use self::runtime::{CheckerContext, Runtime};
 use self::utils::{LogStatus, ResultExt as _};
 
 static ICONS: &str = include_str!("./icons.json");
 static SUBSTITUTIONS: &str = include_str!("./substitutions.json");
+static PATCH_NF_3_3_0: &str = include_str!("./patch-nf-3_3_0.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = (IoPath, Option<IoPath>)>,
@@ -97,11 +98,14 @@ fn main_impl() -> error::Result<()> {
     if args.input.is_empty() {
         rt.load_db(ICONS).unwrap();
         rt.load_db(SUBSTITUTIONS).unwrap();
+        if args.nf_version == NfVersion::V3_3_0 {
+            rt.load_db(PATCH_NF_3_3_0).unwrap();
+        }
     }
     for input in args.input.iter() {
         rt.load_db_from(input)?;
     }
-    rt.with_substitutions(args.sub);
+    rt.with_substitutions(args.sub)?;
 
     match args.cmd {
         Command::Cache { .. } => warn!("`cache` is deprecated, use `dump` instead"),
@@ -194,6 +198,19 @@ fn main_impl() -> error::Result<()> {
         }
         Command::Search {} => {
             rt.build().prompt_input_icon(None).ok();
+        }
+        Command::Query { codepoint, name } => {
+            let rt = rt.build();
+            let icon = if let Some(c) = codepoint {
+                rt.get_icon_by_codepoint(c)
+            } else if let Some(name) = name {
+                rt.get_icon_by_name(&name)
+            } else {
+                None
+            };
+            if let Some(icon) = icon {
+                println!("{}", serde_json::to_string(icon)?);
+            }
         }
         Command::Completions { shell } => {
             clap_complete::generate(

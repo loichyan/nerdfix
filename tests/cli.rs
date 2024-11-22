@@ -105,6 +105,16 @@ fn check() {
 }
 
 #[test]
+fn check_nf_3_3_0() {
+    test_cli!(
+        "check_nf_3_3_0",
+        "check",
+        "--nf-version=3.3.0",
+        "tests/test-data.txt"
+    );
+}
+
+#[test]
 fn check_with_db() {
     test_cli!(
         "check_with_db",

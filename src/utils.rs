@@ -4,6 +4,17 @@ use noodler::NGramSearcher;
 
 use crate::error;
 
+pub(crate) fn parse_jsonc<T>(str: &str) -> serde_json::Result<T>
+where
+    T: serde::de::DeserializeOwned,
+{
+    // Strip comments **in place** so that any return error has the correct
+    // codespans.
+    let mut str = str.to_owned();
+    json_strip_comments::strip_comments_in_place(&mut str, <_>::default(), true).ok();
+    serde_json::from_str(&str)
+}
+
 pub(crate) struct LogStatus;
 
 const _: () = {
