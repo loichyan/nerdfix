@@ -15,7 +15,7 @@ use tracing::{info, warn};
 use crate::autocomplete::Autocompleter;
 use crate::cli::{IoPath, OutputFormat, UserInput};
 use crate::error;
-use crate::icon::{Database, Icon, Substitution, SubstitutionType, Substitutions};
+use crate::icon::{parse_codepoint, Database, Icon, Substitution, SubstitutionType, Substitutions};
 use crate::utils::NGramSearcherExt as _;
 
 const ARITY: usize = 3;
@@ -33,6 +33,7 @@ pub struct Runtime {
     corpus: OnceCell<Rc<NGram>>,
     exact_sub: HashMap<String, String>,
     prefix_sub: Vec<Substitution>,
+    codepoint_sub: HashMap<char, char>,
 }
 
 #[derive(Default)]
@@ -40,6 +41,7 @@ pub struct RuntimeBuilder {
     icons: IndexMap<String, Icon>,
     exact_sub: HashMap<String, String>,
     prefix_sub: Vec<Substitution>,
+    codepoint_sub: HashMap<char, char>,
 }
 
 impl RuntimeBuilder {
@@ -57,19 +59,25 @@ impl RuntimeBuilder {
                 self.icons.insert(icon.name.clone(), icon);
             }
         }
-        self.with_substitutions(input.substitutions);
+        self.with_substitutions(input.substitutions)?;
         Ok(())
     }
 
-    pub fn with_substitutions(&mut self, substitutions: Substitutions) {
+    pub fn with_substitutions(&mut self, substitutions: Substitutions) -> error::Result<()> {
         for sub in substitutions {
             match sub.ty {
                 SubstitutionType::Exact => {
                     self.exact_sub.insert(sub.from, sub.to);
                 }
                 SubstitutionType::Prefix => self.prefix_sub.push(sub),
+                SubstitutionType::Codepoint => {
+                    let from = parse_codepoint(&sub.from)?;
+                    let to = parse_codepoint(&sub.to)?;
+                    self.codepoint_sub.insert(from, to);
+                }
             }
         }
+        Ok(())
     }
 
     pub fn build(self) -> Runtime {
@@ -77,11 +85,13 @@ impl RuntimeBuilder {
             icons,
             exact_sub,
             prefix_sub,
+            codepoint_sub,
         } = self;
         Runtime {
             icons: Rc::new(icons),
             prefix_sub,
             exact_sub,
+            codepoint_sub,
             ..Default::default()
         }
     }
@@ -257,10 +267,18 @@ impl Runtime {
     }
 
     fn get_substitutions<'a>(&'a self, icon: &'a Icon) -> impl 'a + Iterator<Item = &'a Icon> {
-        self.exact_sub
-            .get(&icon.name)
-            .into_iter()
-            .filter_map(|name| self.icons.get(name))
+        std::iter::empty()
+            .chain(
+                self.codepoint_sub
+                    .get(&icon.codepoint)
+                    .and_then(|c| self.index().get(c))
+                    .map(|&i| &self.icons[i]),
+            )
+            .chain(
+                self.exact_sub
+                    .get(&icon.name)
+                    .and_then(|name| self.icons.get(name)),
+            )
             .chain(self.prefix_sub.iter().filter_map(|rep| {
                 let name = icon.name.strip_prefix(&rep.from)?;
                 self.icons.get(&format!("{}{name}", rep.to))

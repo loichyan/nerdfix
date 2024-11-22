@@ -49,6 +49,7 @@ pub enum SubstitutionType {
     #[default]
     Exact,
     Prefix,
+    Codepoint,
 }
 
 mod codepoint {
@@ -96,6 +97,7 @@ mod substitution {
             Ok(match s {
                 "exact" => SubstitutionType::Exact,
                 "prefix" => SubstitutionType::Prefix,
+                "codepoint" => SubstitutionType::Codepoint,
                 _ => return Err("unknown substitution type"),
             })
         }
@@ -145,6 +147,7 @@ mod substitution {
             f.write_str(match self {
                 Self::Exact => "exact",
                 Self::Prefix => "prefix",
+                Self::Codepoint => "codepoint",
             })
         }
     }

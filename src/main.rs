@@ -101,7 +101,7 @@ fn main_impl() -> error::Result<()> {
     for input in args.input.iter() {
         rt.load_db_from(input)?;
     }
-    rt.with_substitutions(args.sub);
+    rt.with_substitutions(args.sub)?;
 
     match args.cmd {
         Command::Cache { .. } => warn!("`cache` is deprecated, use `dump` instead"),
