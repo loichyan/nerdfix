@@ -16,7 +16,7 @@ use crate::autocomplete::Autocompleter;
 use crate::cli::{IoPath, OutputFormat, UserInput};
 use crate::error;
 use crate::icon::{Database, Icon, Substitution, SubstitutionType, Substitutions};
-use crate::util::NGramSearcherExt as _;
+use crate::utils::NGramSearcherExt as _;
 
 const ARITY: usize = 3;
 const PAD_LEN: usize = 2;
