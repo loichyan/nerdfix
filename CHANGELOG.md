@@ -39,6 +39,8 @@ noticeable to end-users since the last release. For developers, this project fol
 - Support comments in JSON files.
 - Add a new `nerdfix query` subcommand, useful for querying icon infos from the database.
 - Add a new `codepoint:from/to` substitution type.
+- Support checking dropped icons of Nerd Fonts v3.3.0 through the newly added
+  `nerdfix --nf-version=3.3.0` option.
 
 ## [0.4.1] - 2024-07-14
 

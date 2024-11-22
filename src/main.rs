@@ -17,13 +17,14 @@ use tracing::{error, info, warn, Level};
 use tracing_subscriber::prelude::*;
 use walkdir::WalkDir;
 
-use self::cli::{Command, IoPath, Source};
+use self::cli::{Command, IoPath, NfVersion, Source};
 use self::prompt::YesOrNo;
 use self::runtime::{CheckerContext, Runtime};
 use self::utils::{LogStatus, ResultExt as _};
 
 static ICONS: &str = include_str!("./icons.json");
 static SUBSTITUTIONS: &str = include_str!("./substitutions.json");
+static PATCH_NF_3_3_0: &str = include_str!("./patch-nf-3_3_0.json");
 
 fn walk<'a>(
     paths: impl 'a + IntoIterator<Item = (IoPath, Option<IoPath>)>,
@@ -97,6 +98,9 @@ fn main_impl() -> error::Result<()> {
     if args.input.is_empty() {
         rt.load_db(ICONS).unwrap();
         rt.load_db(SUBSTITUTIONS).unwrap();
+        if args.nf_version == NfVersion::V3_3_0 {
+            rt.load_db(PATCH_NF_3_3_0).unwrap();
+        }
     }
     for input in args.input.iter() {
         rt.load_db_from(input)?;

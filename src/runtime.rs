@@ -55,9 +55,7 @@ impl RuntimeBuilder {
     pub fn load_db(&mut self, content: &str) -> error::Result<()> {
         let input = crate::parser::parse(content)?;
         for icon in input.icons {
-            if !self.icons.contains_key(&icon.name) {
-                self.icons.insert(icon.name.clone(), icon);
-            }
+            self.icons.insert(icon.name.clone(), icon);
         }
         self.with_substitutions(input.substitutions)?;
         Ok(())
