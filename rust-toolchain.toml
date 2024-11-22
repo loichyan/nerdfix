@@ -1,0 +1,8 @@
+[toolchain]
+# The channel used to develop this crate.
+# For binary crates, it should remain the same as the crate's MSRV to ensure all
+# tests pass for packaging.
+# For library crates, it may differ from the MSRV since many development
+# dependencies require a newer version of Rust, while we still aim to support
+# older versions.
+channel = "1.75"

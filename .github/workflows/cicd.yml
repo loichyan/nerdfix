@@ -171,6 +171,11 @@ jobs:
           name: ${{ needs.metadata.outputs.name }}-${{ matrix.target }}
           path: ${{ steps.pack.outputs.name }}*
 
+  # How to create a new GitHub release?
+  # 1. Create a release branch named "release/<tag>".
+  # 2. Open a PR from the branch, including the release note in the PR body.
+  # 3. Wait for the CI to create a draft release.
+  # 4. Publish the release when it's ready.
   release:
     name: Create GitHub release
     needs: [metadata, build]
@@ -179,10 +184,6 @@ jobs:
       contents: write # need to update release
     runs-on: ubuntu-latest
     steps:
-      - name: Setup | Checkout
-        uses: actions/checkout@v4
-
-      # For a PR from "release/v1.0.0", the release tag is set to "v1.0.0"
       - name: Setup | Configure
         id: configure
         run: echo tag="${GITHUB_HEAD_REF#release/}" >$GITHUB_OUTPUT
@@ -194,24 +195,23 @@ jobs:
           pattern: ${{ needs.metadata.outputs.name }}-*
           merge-multiple: true
 
-      # Release notes are taken from the PR's body
       - name: Release | Create Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           release_tag: ${{ steps.configure.outputs.tag }}
           release_body: ${{ github.event.pull_request.body }}
         run: |
-          if gh release view --json= "$release_tag" &>/dev/null; then
-            echo "update existed release $release_tag"
-            command=edit
+          if gh release view "$release_tag" &>/dev/null; then
+            echo "update existing release $release_tag"
+            command="edit"
           else
             echo "create new release $release_tag"
-            command=create
+            command="create"
           fi
           gh release "$command" "$release_tag" \
             --target="$GITHUB_BASE_REF" \
             --draft=true \
-            --title="$release_tag ($(date -u +'%Y-%m-%d'))" \
+            --title="${release_tag#v} ($(date -u +'%Y-%m-%d'))" \
             --notes="$release_body"
 
       - name: Release | Upload artifacts

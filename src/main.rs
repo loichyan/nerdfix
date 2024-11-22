@@ -1,5 +1,5 @@
 #[macro_use]
-mod util;
+mod utils;
 mod autocomplete;
 mod cli;
 mod error;
@@ -20,7 +20,7 @@ use walkdir::WalkDir;
 use self::cli::{Command, IoPath, Source};
 use self::prompt::YesOrNo;
 use self::runtime::{CheckerContext, Runtime};
-use self::util::{LogStatus, ResultExt as _};
+use self::utils::{LogStatus, ResultExt as _};
 
 static ICONS: &str = include_str!("./icons.json");
 static SUBSTITUTIONS: &str = include_str!("./substitutions.json");
