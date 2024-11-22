@@ -2,12 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
-adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!--
-Here's a template for each release section. This file should only include changes that are
-noticeable to end-users since the last release. For developers, this project follows
+Here's a template for each release section. This file should only include changes that
+are noticeable to end-users since the last release. For developers, this project follows
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) to track changes.
 
 ## [1.0.0] - YYYY-MM-DD
@@ -38,8 +38,8 @@ noticeable to end-users since the last release. For developers, this project fol
 - Support comments in JSON files ([#33]).
 - Add a new `nerdfix query` subcommand, useful for querying icon infos from the database ([#33]).
 - Add a new `codepoint:from/to` substitution type ([#33]).
-- Support checking dropped icons of Nerd Fonts v3.3.0 through the newly added
-  `nerdfix --nf-version=3.3.0` option ([#33], thanks [@Finii] and [@hasecilu]).
+- Support checking dropped icons of Nerd Fonts v3.3.0 through the newly added `nerdfix --nf-version=3.3.0` option
+  ([#33], thanks [@Finii] and [@hasecilu]).
 
 [#30]: https://github.com/loichyan/nerdfix/pull/30
 [#33]: https://github.com/loichyan/nerdfix/pull/33
@@ -48,8 +48,8 @@ noticeable to end-users since the last release. For developers, this project fol
 
 ## [0.4.1] - 2024-07-14
 
-This release mainly addresses the high memory usage issue reported in [#18]: fixed a potential
-memory leak in [#21], and implemented stream processing in [#22].
+This release mainly addresses the high memory usage issue reported in [#18]: fixed a potential memory leak in [#21], and
+implemented stream processing in [#22].
 
 Also, some UI changes were introduced in [#21], as we switched the diagnostic reporter from
 [codespan_reporting](https://docs.rs/codespan-reporting/latest/codespan_reporting) to
@@ -81,13 +81,13 @@ Also, some UI changes were introduced in [#21], as we switched the diagnostic re
 
 ## [0.4.0] - 2023-10-20
 
-This release introduces the predefined substitutions support suggested in [#9] (thanks [@Finii]),
-and also brings some UX breaking changes. Here are some guides for migrating from `v0.3`:
+This release introduces the predefined substitutions support suggested in [#9] (thanks [@Finii]), and also brings some
+UX breaking changes. Here are some guides for migrating from `v0.3`:
 
 1. Use `dump` instead of `cache` to show all icons and substitutions in the runtime database.
-2. The Previous release supports use `--replace FROM:TO` to perform a prefix substitution, now it
-   uses the newly add `--sub TYPE:FROM/TO` argument to support both `exact` and `prefix`
-   substitutions. This means that you should use `--sub prefix:FROM/TO` in place of the old one.
+2. The Previous release supports use `--replace FROM:TO` to perform a prefix substitution, now it uses the newly add
+   `--sub TYPE:FROM/TO` argument to support both `exact` and `prefix` substitutions. This means that you should use
+   `--sub prefix:FROM/TO` in place of the old one.
 
 ### Added
 
@@ -143,8 +143,7 @@ and also brings some UX breaking changes. Here are some guides for migrating fro
 
 ### Changed
 
-- [**breaking**] Deprecated `--yes`, use `--write` and `--select-first` to force non-interactive
-  fixes ([#4]).
+- [**breaking**] Deprecated `--yes`, use `--write` and `--select-first` to force non-interactive fixes ([#4]).
 - Streamline Nix package derivation ([a9a3630]).
 
 ### Fixed
@@ -226,8 +225,7 @@ and also brings some UX breaking changes. Here are some guides for migrating fro
 
 ## [0.1.0] - 2023-03-25
 
-🎉 Initial release. See [README](https://github.com/loichyan/nerdfix/blob/v0.1.0/README.md) for more
-details.
+🎉 Initial release. See [README](https://github.com/loichyan/nerdfix/blob/v0.1.0/README.md) for more details.
 
 [Unreleased]: https://github.com/loichyan/nerdfix/compare/v0.4.1..HEAD
 [0.4.1]: https://github.com/loichyan/nerdfix/compare/v0.4.0..v0.4.1
