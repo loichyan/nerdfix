@@ -10,7 +10,7 @@ use crate::icon::{Database, Icon};
 pub fn parse(s: &str) -> error::Result<Database> {
     let s = s.trim_start();
     Ok(if s.starts_with('{') {
-        serde_json::from_str::<Database>(s)?
+        crate::utils::parse_jsonc::<Database>(s)?
     } else {
         Database {
             icons: parse_cheat_sheet(s)?,

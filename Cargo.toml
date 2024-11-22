@@ -17,6 +17,7 @@ extend = "1.2"
 indexmap = "2.2"
 inquire = "0.7.5"
 itertools = "0.13.0"
+json-strip-comments = "1"
 miette = { version = "7.2", features = ["fancy"] }
 noodler = "0.1.0"
 nu-ansi-term = "0.50.0"
