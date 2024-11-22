@@ -195,6 +195,19 @@ fn main_impl() -> error::Result<()> {
         Command::Search {} => {
             rt.build().prompt_input_icon(None).ok();
         }
+        Command::Query { codepoint, name } => {
+            let rt = rt.build();
+            let icon = if let Some(c) = codepoint {
+                rt.get_icon_by_codepoint(c)
+            } else if let Some(name) = name {
+                rt.get_icon_by_name(&name)
+            } else {
+                None
+            };
+            if let Some(icon) = icon {
+                println!("{}", serde_json::to_string(icon)?);
+            }
+        }
         Command::Completions { shell } => {
             clap_complete::generate(
                 shell,

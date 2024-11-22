@@ -142,6 +142,13 @@ pub enum Command {
     },
     /// Fuzzy search for an icon.
     Search {},
+    /// Query icon infos from the database, returned in JSON.
+    Query {
+        #[arg(long, value_parser = crate::icon::parse_codepoint)]
+        codepoint: Option<char>,
+        #[arg(long, conflicts_with = "codepoint")]
+        name: Option<String>,
+    },
     /// Generate shell completions for your shell to stdout.
     Completions {
         #[arg(value_name = V_SHELL)]

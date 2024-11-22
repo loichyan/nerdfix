@@ -37,6 +37,7 @@ noticeable to end-users since the last release. For developers, this project fol
 - Add a subcommand, `nerdfix completions <SHELL>`, to generate completions for your shell
   ([#30](https://github.com/loichyan/nerdfix/pull/30)).
 - Support comments in JSON files.
+- Add a new `nerdfix query` subcommand, useful for querying icon infos from the database.
 
 ## [0.4.1] - 2024-07-14
 

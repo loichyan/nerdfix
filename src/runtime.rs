@@ -239,6 +239,14 @@ impl Runtime {
         Ok(updated)
     }
 
+    pub fn get_icon_by_codepoint(&self, c: char) -> Option<&Icon> {
+        self.index().get(&c).map(|&i| &self.icons[i])
+    }
+
+    pub fn get_icon_by_name(&self, name: &str) -> Option<&Icon> {
+        self.icons.get(name)
+    }
+
     fn get_candidates<'a>(&'a self, icon: &'a Icon) -> Vec<&'a Icon> {
         self.corpus()
             .searcher(&icon.name)
