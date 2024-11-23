@@ -32,6 +32,8 @@ are noticeable to end-users since the last release. For developers, this project
 
 ## [Unreleased]
 
+## [0.4.2] - 2024-11-23
+
 ### Added
 
 - Add a subcommand, `nerdfix completions <SHELL>`, to generate completions for your shell ([#30]).
@@ -228,7 +230,8 @@ UX breaking changes. Here are some guides for migrating from `v0.3`:
 
 🎉 Initial release. See [README](https://github.com/loichyan/nerdfix/blob/v0.1.0/README.md) for more details.
 
-[Unreleased]: https://github.com/loichyan/nerdfix/compare/v0.4.1..HEAD
+[Unreleased]: https://github.com/loichyan/nerdfix/compare/v0.4.2..HEAD
+[0.4.2]: https://github.com/loichyan/nerdfix/compare/v0.4.1..v0.4.2
 [0.4.1]: https://github.com/loichyan/nerdfix/compare/v0.4.0..v0.4.1
 [0.4.0]: https://github.com/loichyan/nerdfix/compare/v0.3.1..v0.4.0
 [0.3.1]: https://github.com/loichyan/nerdfix/compare/v0.3.0..v0.3.1
