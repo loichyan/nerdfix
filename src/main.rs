@@ -196,16 +196,14 @@ fn main_impl() -> error::Result<()> {
                 .log_error();
             }
         }
-        Command::Search {} => {
-            rt.build().prompt_input_icon(None).ok();
-        }
-        Command::Query { codepoint, name } => {
+        Command::Search { codepoint, name } => {
             let rt = rt.build();
             let icon = if let Some(c) = codepoint {
                 rt.get_icon_by_codepoint(c)
             } else if let Some(name) = name {
                 rt.get_icon_by_name(&name)
             } else {
+                rt.prompt_input_icon(None).ok();
                 None
             };
             if let Some(icon) = icon {
