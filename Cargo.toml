@@ -1,6 +1,6 @@
 [package]
 name = "nerdfix"
-version = "0.4.1"
+version = "0.4.2"
 authors = ["Loi Chyan <loichyan@foxmail.com>"]
 license = "MIT OR Apache-2.0"
 edition = "2021"
