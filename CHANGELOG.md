@@ -42,10 +42,11 @@ are noticeable to end-users since the last release. For developers, this project
 - Support checking dropped icons of Nerd Fonts v3.3.0 through the newly added `nerdfix --nf-version=3.3.0` option
   ([#33], thanks [@Finii] and [@hasecilu]).
 - Add two new options, `--codepoint` and `--name`, for `nerdfix search`, useful for querying icon infos from the
-  database non-interactively ([#??]).
+  database non-interactively ([#34]).
 
 [#30]: https://github.com/loichyan/nerdfix/pull/30
 [#33]: https://github.com/loichyan/nerdfix/pull/33
+[#34]: https://github.com/loichyan/nerdfix/pull/34
 [@Finii]: https://github.com/Finii
 [@hasecilu]: https://github.com/hasecilu
 
