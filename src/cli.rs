@@ -74,7 +74,7 @@ pub struct Cli {
     #[command(subcommand)]
     pub cmd: Command,
     /// [deprecated] Use `--input` instead.
-    #[arg(long, global = true, value_name = V_SUB)]
+    #[arg(long, global = true, value_name = V_PATH)]
     pub substitution: Vec<IoPath>,
     /// [deprecated] Use `--sub prefix:` instead.
     #[arg(long, global = true, value_name = V_SUB)]
@@ -145,12 +145,15 @@ pub enum Command {
         #[arg(value_name = V_SOURCE)]
         source: Vec<IoPath>,
     },
-    /// Fuzzy search for an icon.
-    Search {},
-    /// Query icon infos from the database, returned in JSON.
-    Query {
+    /// Query icon infos from the database.
+    ///
+    /// If no argument is specified, it will open a prompt for interactive fuzzy
+    /// search.
+    Search {
+        /// Search for icon of the given codepoint, returned in JSON if matches.
         #[arg(long, value_parser = crate::icon::parse_codepoint)]
         codepoint: Option<char>,
+        /// Search for icon of the given name, returned in JSON if matches.
         #[arg(long, conflicts_with = "codepoint")]
         name: Option<String>,
     },
