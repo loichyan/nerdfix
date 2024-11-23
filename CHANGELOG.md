@@ -36,10 +36,11 @@ are noticeable to end-users since the last release. For developers, this project
 
 - Add a subcommand, `nerdfix completions <SHELL>`, to generate completions for your shell ([#30]).
 - Support comments in JSON files ([#33]).
-- Add a new `nerdfix query` subcommand, useful for querying icon infos from the database ([#33]).
 - Add a new `codepoint:from/to` substitution type ([#33]).
 - Support checking dropped icons of Nerd Fonts v3.3.0 through the newly added `nerdfix --nf-version=3.3.0` option
   ([#33], thanks [@Finii] and [@hasecilu]).
+- Add two new options, `--codepoint` and `--name`, for `nerdfix search`, useful for querying icon infos from the
+  database non-interactively ([#??]).
 
 [#30]: https://github.com/loichyan/nerdfix/pull/30
 [#33]: https://github.com/loichyan/nerdfix/pull/33
